@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { Prisma, ProductCategory } from "@prisma/client";
 import { z } from "zod";
 import Papa from "papaparse";
 
@@ -13,7 +14,7 @@ const inventoryItemSchema = z.object({
   sku: z.string().min(1),
   brand: z.string().min(1),
   model: z.string().min(1),
-  category: z.enum(["DRIVER", "FAIRWAY_WOOD", "HYBRID", "DRIVING_IRON", "IRON_SET", "INDIVIDUAL_IRON", "WEDGE", "PUTTER", "SHAFT", "GRIP"]),
+  category: z.nativeEnum(ProductCategory),
   loft: z.string().optional(),
   shaft: z.string().optional(),
   flex: z.string().optional(),
@@ -41,23 +42,24 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     const { retailerId } = await params;
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category");
+    const category = searchParams.get("category") as ProductCategory | null;
     const available = searchParams.get("available");
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "50");
 
-    const inventory = await db.retailerInventoryItem.findMany({
-      where: {
-        retailerId,
-        ...(category ? { category: category as Parameters<typeof db.retailerInventoryItem.findMany>[0]["where"]["category"] } : {}),
-        ...(available !== null ? { available: available === "true" } : {}),
-      },
-      orderBy: [{ category: "asc" }, { brand: "asc" }, { model: "asc" }],
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const where: Prisma.RetailerInventoryItemWhereInput = { retailerId };
+    if (category) where.category = category;
+    if (available !== null) where.available = available === "true";
 
-    const total = await db.retailerInventoryItem.count({ where: { retailerId } });
+    const [inventory, total] = await Promise.all([
+      db.retailerInventoryItem.findMany({
+        where,
+        orderBy: [{ category: "asc" }, { brand: "asc" }, { model: "asc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.retailerInventoryItem.count({ where: { retailerId } }),
+    ]);
 
     return NextResponse.json({ inventory, total, page, limit });
   } catch (error) {
@@ -88,34 +90,43 @@ export async function POST(req: NextRequest, { params }: Params) {
       const text = await file.text();
       const { data } = Papa.parse(text, { header: true, skipEmptyLines: true });
 
-      const results = { created: 0, updated: 0, errors: [] as string[] };
+      const results = { created: 0, updated: 0, errors: [] as string[], items: [] as object[] };
 
       for (const row of data as Record<string, string>[]) {
         try {
-          const item = {
+          const raw = {
             sku: row.sku ?? row.SKU,
             brand: row.brand ?? row.Brand,
             model: row.model ?? row.Model,
-            category: (row.category ?? row.Category ?? "").toUpperCase(),
-            loft: row.loft ?? row.Loft,
-            shaft: row.shaft ?? row.Shaft,
-            flex: row.flex ?? row.Flex,
+            category: (row.category ?? row.Category ?? "").toUpperCase() as ProductCategory,
+            loft: (row.loft ?? row.Loft) || undefined,
+            shaft: (row.shaft ?? row.Shaft) || undefined,
+            flex: (row.flex ?? row.Flex) || undefined,
             price: parseFloat(row.price ?? row.Price ?? "0"),
             salePrice: row.sale_price ? parseFloat(row.sale_price) : undefined,
             stockQty: parseInt(row.stock_qty ?? row.StockQty ?? "0"),
-            productUrl: row.product_url ?? row.ProductUrl,
-            imageUrl: row.image_url ?? row.ImageUrl,
+            productUrl: (row.product_url ?? row.ProductUrl) || undefined,
+            imageUrl: (row.image_url ?? row.ImageUrl) || undefined,
             available: row.available !== "false",
           };
 
-          const validated = inventoryItemSchema.parse(item);
+          const validated = inventoryItemSchema.parse(raw);
+          const { specs, ...rest } = validated;
 
-          await db.retailerInventoryItem.upsert({
+          const item = await db.retailerInventoryItem.upsert({
             where: { retailerId_sku: { retailerId, sku: validated.sku } },
-            create: { retailerId, ...validated, category: validated.category as Parameters<typeof db.retailerInventoryItem.create>[0]["data"]["category"] },
-            update: validated as Parameters<typeof db.retailerInventoryItem.update>[0]["data"],
+            create: {
+              retailerId,
+              ...rest,
+              ...(specs ? { specs: specs as Prisma.InputJsonValue } : {}),
+            },
+            update: {
+              ...rest,
+              ...(specs ? { specs: specs as Prisma.InputJsonValue } : {}),
+            },
           });
 
+          results.items.push(item);
           results.created++;
         } catch (err) {
           results.errors.push(`Row error: ${(err as Error).message}`);
@@ -126,13 +137,21 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     // Handle single item POST
-    const body = await req.json();
-    const data = inventoryItemSchema.parse(body);
+    const body = await req.json() as unknown;
+    const validated = inventoryItemSchema.parse(body);
+    const { specs, ...rest } = validated;
 
     const item = await db.retailerInventoryItem.upsert({
-      where: { retailerId_sku: { retailerId, sku: data.sku } },
-      create: { retailerId, ...data, category: data.category as Parameters<typeof db.retailerInventoryItem.create>[0]["data"]["category"] },
-      update: data as Parameters<typeof db.retailerInventoryItem.update>[0]["data"],
+      where: { retailerId_sku: { retailerId, sku: validated.sku } },
+      create: {
+        retailerId,
+        ...rest,
+        ...(specs ? { specs: specs as Prisma.InputJsonValue } : {}),
+      },
+      update: {
+        ...rest,
+        ...(specs ? { specs: specs as Prisma.InputJsonValue } : {}),
+      },
     });
 
     return NextResponse.json(item, { status: 201 });

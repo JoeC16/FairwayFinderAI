@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { runFittingEngine } from "@/lib/engines/fitting-engine";
 import { matchInventory } from "@/lib/engines/inventory-matching-engine";
@@ -102,26 +103,26 @@ export async function POST(req: NextRequest, { params }: Params) {
       create: {
         sessionId,
         overallConfidence: result.confidence.overall.score,
-        confidenceScores: result.confidence as unknown as Record<string, unknown>,
-        driverRec: result.driver as unknown as Record<string, unknown>,
-        ironRec: result.irons as unknown as Record<string, unknown>,
-        wedgeRec: result.wedges as unknown as Record<string, unknown>,
-        shaftRec: result.shafts as unknown as Record<string, unknown>,
-        lieLengthRec: result.lieLength as unknown as Record<string, unknown>,
-        bagGapAnalysis: result.bagGaps as unknown as Record<string, unknown>,
-        upgradeOrder: result.upgradePriorities as unknown as Record<string, unknown>[],
+        confidenceScores: result.confidence as unknown as Prisma.InputJsonValue,
+        driverRec: result.driver as unknown as Prisma.InputJsonValue,
+        ironRec: result.irons as unknown as Prisma.InputJsonValue,
+        wedgeRec: result.wedges as unknown as Prisma.InputJsonValue,
+        shaftRec: result.shafts as unknown as Prisma.InputJsonValue,
+        lieLengthRec: result.lieLength as unknown as Prisma.InputJsonValue,
+        bagGapAnalysis: result.bagGaps as unknown as Prisma.InputJsonValue,
+        upgradeOrder: result.upgradePriorities as unknown as Prisma.InputJsonValue,
         aiSummary: result.summaryPoints.join(" "),
       },
       update: {
         overallConfidence: result.confidence.overall.score,
-        confidenceScores: result.confidence as unknown as Record<string, unknown>,
-        driverRec: result.driver as unknown as Record<string, unknown>,
-        ironRec: result.irons as unknown as Record<string, unknown>,
-        wedgeRec: result.wedges as unknown as Record<string, unknown>,
-        shaftRec: result.shafts as unknown as Record<string, unknown>,
-        lieLengthRec: result.lieLength as unknown as Record<string, unknown>,
-        bagGapAnalysis: result.bagGaps as unknown as Record<string, unknown>,
-        upgradeOrder: result.upgradePriorities as unknown as Record<string, unknown>[],
+        confidenceScores: result.confidence as unknown as Prisma.InputJsonValue,
+        driverRec: result.driver as unknown as Prisma.InputJsonValue,
+        ironRec: result.irons as unknown as Prisma.InputJsonValue,
+        wedgeRec: result.wedges as unknown as Prisma.InputJsonValue,
+        shaftRec: result.shafts as unknown as Prisma.InputJsonValue,
+        lieLengthRec: result.lieLength as unknown as Prisma.InputJsonValue,
+        bagGapAnalysis: result.bagGaps as unknown as Prisma.InputJsonValue,
+        upgradeOrder: result.upgradePriorities as unknown as Prisma.InputJsonValue,
         aiSummary: result.summaryPoints.join(" "),
         updatedAt: new Date(),
       },
