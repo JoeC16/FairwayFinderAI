@@ -1,0 +1,598 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH (NextAuth v4)
+// ============================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// USER
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?
+  role          UserRole  @default(CONSUMER)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  fittingSessions FittingSession[]
+  retailer        Retailer?
+  subscription    Subscription?
+  notifications   Notification[]
+
+  @@index([email])
+  @@index([role])
+}
+
+enum UserRole {
+  CONSUMER
+  RETAILER
+  ADMIN
+}
+
+// ============================================================
+// FITTING SESSION
+// ============================================================
+
+model FittingSession {
+  id          String        @id @default(cuid())
+  userId      String?
+  retailerId  String?
+  guestToken  String?       @unique
+  status      FittingStatus @default(IN_PROGRESS)
+  currentStep Int           @default(1)
+  source      String?
+  metadata    Json?
+  completedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user           User?              @relation(fields: [userId], references: [id])
+  retailer       Retailer?          @relation(fields: [retailerId], references: [id])
+  playerProfile  PlayerProfile?
+  currentBag     CurrentBag?
+  shotTendencies ShotTendencies?
+  distanceMatrix DistanceMatrix?
+  launchMonitor  LaunchMonitorData?
+  swingVideos    SwingVideo[]
+  fittingResult  FittingResult?
+  lead           Lead?
+
+  @@index([userId])
+  @@index([retailerId])
+  @@index([status])
+  @@index([guestToken])
+}
+
+enum FittingStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  PROCESSING
+}
+
+// ============================================================
+// PLAYER PROFILE (Step 1)
+// ============================================================
+
+model PlayerProfile {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  name             String
+  email            String
+  phone            String?
+  age              Int?
+  gender           String?
+  dominantHand     String   @default("right")
+  handicap         Float
+  heightCm         Int
+  wristToFloorCm   Int?
+  averageScore     Int?
+  goals            String[]
+  playingFrequency String?
+  experience       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  session FittingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+// ============================================================
+// CURRENT BAG (Step 2)
+// ============================================================
+
+model CurrentBag {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  clubs     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session FittingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// SHOT TENDENCIES (Step 3)
+// ============================================================
+
+model ShotTendencies {
+  id             String   @id @default(cuid())
+  sessionId      String   @unique
+  typicalMiss    String?
+  strikePattern  String?
+  ballFlight     String?
+  shotShape      String?
+  frustrations   String[]
+  driverNotes    String?
+  ironNotes      String?
+  shortGameNotes String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  session FittingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// DISTANCE MATRIX (Step 4)
+// ============================================================
+
+model DistanceMatrix {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  distances Json
+  unit      String   @default("yards")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session FittingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// LAUNCH MONITOR DATA (Step 5)
+// ============================================================
+
+model LaunchMonitorData {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  monitorType String?
+  driverData  Json?
+  ironData    Json?
+  wedgeData   Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  session FittingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// SWING VIDEOS (Step 6)
+// ============================================================
+
+model SwingVideo {
+  id             String              @id @default(cuid())
+  sessionId      String
+  view           VideoView
+  fileKey        String
+  fileUrl        String
+  fileSize       Int?
+  mimeType       String?
+  analysisStatus VideoAnalysisStatus @default(PENDING)
+  analysisData   Json?
+  analyzedAt     DateTime?
+  createdAt      DateTime            @default(now())
+
+  session FittingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+enum VideoView {
+  FACE_ON
+  DOWN_THE_LINE
+}
+
+enum VideoAnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  NOT_REQUESTED
+}
+
+// ============================================================
+// FITTING RESULT
+// ============================================================
+
+model FittingResult {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  overallConfidence Float
+  confidenceScores Json
+  driverRec        Json?
+  ironRec          Json?
+  wedgeRec         Json?
+  shaftRec         Json?
+  lieLengthRec     Json?
+  bagGapAnalysis   Json?
+  upgradeOrder     Json?
+  aiSummary        String?  @db.Text
+  pdfKey           String?
+  pdfUrl           String?
+  generatedAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  session                FittingSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  productRecommendations ProductRecommendation[]
+
+  @@index([sessionId])
+}
+
+// ============================================================
+// PRODUCT DATABASE
+// ============================================================
+
+model Product {
+  id          String          @id @default(cuid())
+  brand       String
+  model       String
+  year        Int?
+  category    ProductCategory
+  subcategory String?
+  description String?         @db.Text
+  specs       Json
+  imageUrl    String?
+  msrp        Float?
+  tags        String[]
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  inventoryItems         RetailerInventoryItem[]
+  productRecommendations ProductRecommendation[]
+
+  @@unique([brand, model, year])
+  @@index([brand])
+  @@index([category])
+  @@index([active])
+}
+
+enum ProductCategory {
+  DRIVER
+  FAIRWAY_WOOD
+  HYBRID
+  DRIVING_IRON
+  IRON_SET
+  INDIVIDUAL_IRON
+  WEDGE
+  PUTTER
+  SHAFT
+  GRIP
+  BAG
+  ACCESSORY
+}
+
+// ============================================================
+// PRODUCT RECOMMENDATIONS
+// ============================================================
+
+model ProductRecommendation {
+  id         String          @id @default(cuid())
+  resultId   String
+  productId  String?
+  category   ProductCategory
+  priority   Int             @default(1)
+  confidence Float
+  reasoning  String          @db.Text
+  specs      Json?
+  custom     Json?
+
+  result  FittingResult          @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  product Product?               @relation(fields: [productId], references: [id])
+  matches InventoryMatch[]
+
+  @@index([resultId])
+  @@index([productId])
+}
+
+// ============================================================
+// RETAILER
+// ============================================================
+
+model Retailer {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  name           String
+  slug           String       @unique
+  email          String
+  phone          String?
+  website        String?
+  address        String?
+  logoUrl        String?
+  primaryColor   String       @default("#166534")
+  secondaryColor String       @default("#d97706")
+  customDomain   String?      @unique
+  plan           RetailerPlan @default(STARTER)
+  active         Boolean      @default(true)
+  trialEndsAt    DateTime?
+  onboardedAt    DateTime?
+  settings       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user            User                   @relation(fields: [userId], references: [id])
+  inventory       RetailerInventoryItem[]
+  leads           Lead[]
+  fittingSessions FittingSession[]
+  widgetConfig    WidgetConfig?
+  analyticsEvents AnalyticsEvent[]
+  subscription    RetailerSubscription?
+
+  @@index([slug])
+  @@index([customDomain])
+  @@index([active])
+}
+
+enum RetailerPlan {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+// ============================================================
+// RETAILER INVENTORY
+// ============================================================
+
+model RetailerInventoryItem {
+  id          String          @id @default(cuid())
+  retailerId  String
+  productId   String?
+  sku         String
+  brand       String
+  model       String
+  category    ProductCategory
+  loft        String?
+  shaft       String?
+  flex        String?
+  handedness  String?
+  length      String?
+  price       Float
+  salePrice   Float?
+  stockQty    Int             @default(0)
+  productUrl  String?
+  imageUrl    String?
+  available   Boolean         @default(true)
+  featured    Boolean         @default(false)
+  specs       Json?
+  tags        String[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  retailer Retailer               @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+  product  Product?               @relation(fields: [productId], references: [id])
+  matches  InventoryMatch[]
+
+  @@unique([retailerId, sku])
+  @@index([retailerId])
+  @@index([category])
+  @@index([available])
+}
+
+// ============================================================
+// INVENTORY MATCH
+// ============================================================
+
+model InventoryMatch {
+  id               String   @id @default(cuid())
+  recommendationId String
+  inventoryItemId  String
+  matchScore       Float
+  matchBreakdown   Json?
+  matchReason      String?
+
+  recommendation ProductRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  inventoryItem  RetailerInventoryItem  @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+  @@index([inventoryItemId])
+}
+
+// ============================================================
+// LEADS
+// ============================================================
+
+model Lead {
+  id              String     @id @default(cuid())
+  retailerId      String
+  sessionId       String?    @unique
+  name            String
+  email           String
+  phone           String?
+  location        String?
+  handicap        Float?
+  interests       String[]
+  status          LeadStatus @default(NEW)
+  source          String?
+  notes           String?    @db.Text
+  assignedTo      String?
+  convertedAt     DateTime?
+  lastContactedAt DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  retailer Retailer        @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+  session  FittingSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([retailerId])
+  @@index([status])
+  @@index([email])
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+// ============================================================
+// WIDGET CONFIG
+// ============================================================
+
+model WidgetConfig {
+  id             String   @id @default(cuid())
+  retailerId     String   @unique
+  embedType      String   @default("inline")
+  showLogo       Boolean  @default(true)
+  showBranding   Boolean  @default(true)
+  welcomeTitle   String?
+  welcomeText    String?
+  ctaText        String?
+  successMessage String?
+  primaryColor   String?
+  allowedDomains String[]
+  collectLeads   Boolean  @default(true)
+  requireEmail   Boolean  @default(true)
+  redirectUrl    String?
+  settings       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  retailer Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// SUBSCRIPTIONS
+// ============================================================
+
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  stripeCustomerId  String?   @unique
+  stripeSubId       String?   @unique
+  stripePriceId     String?
+  plan              String    @default("free")
+  status            String    @default("active")
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean   @default(false)
+  trialEnd          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RetailerSubscription {
+  id                String       @id @default(cuid())
+  retailerId        String       @unique
+  stripeCustomerId  String?      @unique
+  stripeSubId       String?      @unique
+  stripePriceId     String?
+  plan              RetailerPlan @default(STARTER)
+  status            String       @default("trialing")
+  fittingsUsed      Int          @default(0)
+  fittingsLimit     Int          @default(50)
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  retailer Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  retailerId String?
+  sessionId  String?
+  userId     String?
+  eventType  String
+  eventData  Json?
+  pageUrl    String?
+  userAgent  String?
+  ipAddress  String?
+  country    String?
+  createdAt  DateTime @default(now())
+
+  retailer Retailer? @relation(fields: [retailerId], references: [id])
+
+  @@index([retailerId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
