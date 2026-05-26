@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { EmbedFittingStart } from "./embed-fitting-start";
 
+export const dynamic = "force-dynamic";
+
 export default async function EmbedPage({ params }: { params: Promise<{ retailerId: string }> }) {
   const { retailerId } = await params;
 
@@ -13,20 +15,16 @@ export default async function EmbedPage({ params }: { params: Promise<{ retailer
   if (!retailer) notFound();
 
   return (
-    <html lang="en" style={{ margin: 0, padding: 0 }}>
-      <body style={{ margin: 0, padding: 0, fontFamily: "system-ui, sans-serif" }}>
-        <EmbedFittingStart
-          retailer={{
-            id: retailer.id,
-            name: retailer.name,
-            primaryColor: retailer.widgetConfig?.primaryColor ?? retailer.primaryColor,
-            welcomeTitle: retailer.widgetConfig?.welcomeTitle ?? null,
-            welcomeText: retailer.widgetConfig?.welcomeText ?? null,
-            ctaText: retailer.widgetConfig?.ctaText ?? null,
-            showBranding: retailer.widgetConfig?.showBranding ?? true,
-          }}
-        />
-      </body>
-    </html>
+    <EmbedFittingStart
+      retailer={{
+        id: retailer.id,
+        name: retailer.name,
+        primaryColor: retailer.widgetConfig?.primaryColor ?? retailer.primaryColor,
+        welcomeTitle: retailer.widgetConfig?.welcomeTitle ?? null,
+        welcomeText: retailer.widgetConfig?.welcomeText ?? null,
+        ctaText: retailer.widgetConfig?.ctaText ?? null,
+        showBranding: retailer.widgetConfig?.showBranding ?? true,
+      }}
+    />
   );
 }
