@@ -282,9 +282,10 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
 
         {/* Partner retailers */}
         <PartnerRetailers
+          sessionId={sessionId}
           recommendedClubs={[
-            driverRec?.recommendedProducts?.[0]?.model,
-            ironRec?.recommendedProducts?.[0]?.model,
+            driverRec?.recommendedProducts?.[0] && `${driverRec.recommendedProducts[0].brand} ${driverRec.recommendedProducts[0].model}`,
+            ironRec?.recommendedProducts?.[0] && `${ironRec.recommendedProducts[0].brand} ${ironRec.recommendedProducts[0].model}`,
           ].filter(Boolean) as string[]}
         />
 

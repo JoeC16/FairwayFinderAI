@@ -392,6 +392,28 @@ enum RetailerPlan {
   ENTERPRISE
 }
 
+// External partner retailers (American Golf, McGuirks, etc.) — admin managed
+model ExternalPartner {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  description       String?
+  tagline           String?
+  website           String
+  searchUrlTemplate String?  // Use {query} as placeholder
+  logoUrl           String?
+  accentColor       String   @default("#166534")
+  bgColor           String   @default("#f0fdf4")
+  initials          String?
+  countries         String[] @default([])
+  active            Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([active])
+}
+
 // ============================================================
 // RETAILER INVENTORY
 // ============================================================

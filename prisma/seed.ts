@@ -149,14 +149,67 @@ async function main() {
     }
   }
 
+  // ── External partner retailers ─────────────────────────────
+  const partners = [
+    {
+      name: "American Golf",
+      slug: "american-golf",
+      description: "UK's largest golf retailer with 100+ stores nationwide",
+      tagline: "Expert fitting & top brands",
+      website: "https://www.americangolf.co.uk",
+      searchUrlTemplate: "https://www.americangolf.co.uk/search?query={query}",
+      accentColor: "#e31837",
+      bgColor: "#fff1f2",
+      initials: "AG",
+      countries: ["GB"],
+      sortOrder: 1,
+    },
+    {
+      name: "McGuirks Golf",
+      slug: "mcguirks-golf",
+      description: "Ireland's leading independent golf retailer",
+      tagline: "Premium brands & custom fitting",
+      website: "https://www.mcguirksgolf.com",
+      searchUrlTemplate: "https://www.mcguirksgolf.com/catalogsearch/result/?q={query}",
+      accentColor: "#006837",
+      bgColor: "#f0fdf4",
+      initials: "MG",
+      countries: ["IE"],
+      sortOrder: 2,
+    },
+    {
+      name: "Affordable Golf",
+      slug: "affordable-golf",
+      description: "Best value golf equipment in the UK",
+      tagline: "Top brands at great prices",
+      website: "https://www.affordablegolf.co.uk",
+      searchUrlTemplate: "https://www.affordablegolf.co.uk/search?q={query}",
+      accentColor: "#1d4ed8",
+      bgColor: "#eff6ff",
+      initials: "AfG",
+      countries: ["GB"],
+      sortOrder: 3,
+    },
+  ];
+
+  for (const partner of partners) {
+    await prisma.externalPartner.upsert({
+      where: { slug: partner.slug },
+      update: partner,
+      create: partner,
+    });
+  }
+
   const driverCount = await prisma.product.count({ where: { category: "DRIVER" } });
   const ironCount = await prisma.product.count({ where: { category: "IRON_SET" } });
   const wedgeCount = await prisma.product.count({ where: { category: "WEDGE" } });
+  const partnerCount = await prisma.externalPartner.count();
 
   console.log(`✅ Seeding complete:`);
   console.log(`   Drivers:    ${driverCount}`);
   console.log(`   Iron sets:  ${ironCount}`);
   console.log(`   Wedges:     ${wedgeCount}`);
+  console.log(`   Partners:   ${partnerCount}`);
 }
 
 main()
