@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfidenceMeter } from "./confidence-meter";
 import { RecommendationCard } from "./recommendation-card";
 import { GapChart } from "./gap-chart";
+import { PartnerRetailers } from "./partner-retailers";
 import {
   Download,
   Share2,
@@ -279,11 +280,19 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
           </div>
         )}
 
+        {/* Partner retailers */}
+        <PartnerRetailers
+          recommendedClubs={[
+            driverRec?.recommendedProducts?.[0]?.model,
+            ironRec?.recommendedProducts?.[0]?.model,
+          ].filter(Boolean) as string[]}
+        />
+
         {/* CTA */}
         <div className="gradient-hero rounded-2xl p-8 text-center">
-          <h3 className="text-xl font-bold text-white mb-2">Ready to Shop Your Recommendations?</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Save Your Full Report</h3>
           <p className="text-white/70 text-sm mb-6">
-            These products are matched to your fitting data. Contact a retailer to purchase.
+            Download your personalised PDF or save to your dashboard to revisit anytime.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button variant="gold" size="lg" onClick={downloadPDF} disabled={downloading}>

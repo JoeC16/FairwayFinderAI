@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Video, Upload, CheckCircle, Zap } from "lucide-react";
+import { Loader2, Camera, CheckCircle, X, Brain, AlertCircle, Zap, TrendingUp, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SwingAnalysis } from "@/lib/ai/swing-analyser";
 
 interface Props {
   sessionId: string;
@@ -11,157 +12,282 @@ interface Props {
   onSkip: () => void;
 }
 
-type VideoView = "FACE_ON" | "DOWN_THE_LINE";
+const VIEW_LABELS = [
+  { key: "address", label: "Address / Setup", hint: "Standing at address, face-on to camera" },
+  { key: "backswing", label: "Top of Backswing", hint: "At the top, face-on or down-the-line" },
+  { key: "impact", label: "Impact", hint: "Contact position, face-on" },
+  { key: "follow", label: "Follow Through", hint: "Finish position, any angle" },
+];
 
-interface VideoState {
-  file: File | null;
-  uploading: boolean;
-  uploaded: boolean;
+function ScoreBadge({ score }: { score: number }) {
+  const color = score >= 8 ? "bg-green-100 text-green-700" : score >= 6 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700";
+  return <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", color)}>{score}/10</span>;
+}
+
+function SeverityDot({ severity }: { severity: string }) {
+  const color = severity === "minor" ? "bg-amber-400" : severity === "moderate" ? "bg-orange-500" : "bg-red-500";
+  return <span className={cn("inline-block h-2 w-2 rounded-full shrink-0 mt-1.5", color)} />;
 }
 
 export function StepSwingVideo({ sessionId, onComplete, onSkip }: Props) {
-  const [videos, setVideos] = useState<Record<VideoView, VideoState>>({
-    FACE_ON: { file: null, uploading: false, uploaded: false },
-    DOWN_THE_LINE: { file: null, uploading: false, uploaded: false },
-  });
-  const [isAnalysing, setIsAnalysing] = useState(false);
+  const [images, setImages] = useState<Array<{ key: string; dataUrl: string; name: string }>>([]);
+  const [analysing, setAnalysing] = useState(false);
+  const [analysis, setAnalysis] = useState<SwingAnalysis | null>(null);
+  const [error, setError] = useState("");
 
-  async function handleFileSelect(view: VideoView, file: File) {
-    setVideos((prev) => ({ ...prev, [view]: { file, uploading: true, uploaded: false } }));
+  const handleFileSelect = useCallback((key: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setImages((prev) => {
+        const filtered = prev.filter((img) => img.key !== key);
+        return [...filtered, { key, dataUrl, name: file.name }];
+      });
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const removeImage = useCallback((key: string) => {
+    setImages((prev) => prev.filter((img) => img.key !== key));
+  }, []);
+
+  async function handleAnalyse() {
+    if (images.length === 0) return;
+    setAnalysing(true);
+    setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("view", view);
+      const endpoint = sessionId
+        ? `/api/fitting/${sessionId}/swing-analysis`
+        : "/api/swing-analysis";
 
-      const res = await fetch(`/api/fitting/${sessionId}/video`, {
+      const res = await fetch(endpoint, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: images.map((i) => i.dataUrl) }),
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? "Analysis failed");
+      }
 
-      setVideos((prev) => ({ ...prev, [view]: { file, uploading: false, uploaded: true } }));
-    } catch {
-      setVideos((prev) => ({ ...prev, [view]: { file: null, uploading: false, uploaded: false } }));
+      const data = await res.json() as { analysis: SwingAnalysis };
+      setAnalysis(data.analysis);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setAnalysing(false);
     }
   }
 
-  const hasVideos = videos.FACE_ON.uploaded || videos.DOWN_THE_LINE.uploaded;
-
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 rounded-2xl border border-blue-100 p-4 flex items-start gap-3">
-        <Video className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+      {/* Header info */}
+      <div className="bg-brand-50 rounded-2xl border border-brand-100 p-4 flex items-start gap-3">
+        <Brain className="h-5 w-5 text-brand-700 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-blue-900">AI Swing Analysis Coming Soon</p>
-          <p className="text-xs text-blue-700 mt-0.5">
-            Upload your swing videos now and they&apos;ll be analysed when our AI video engine launches. Your data is stored securely.
+          <p className="text-sm font-semibold text-brand-900">AI Swing Analysis — Live</p>
+          <p className="text-xs text-brand-700 mt-0.5">
+            Upload 1–4 photos of your swing. Claude AI will analyse your mechanics and refine your club recommendations.
           </p>
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        {(["FACE_ON", "DOWN_THE_LINE"] as VideoView[]).map((view) => {
-          const state = videos[view];
-          const label = view === "FACE_ON" ? "Face-On View" : "Down-the-Line View";
-          const hint = view === "FACE_ON"
-            ? "Camera facing your chest, perpendicular to target line"
-            : "Camera behind you, pointing down the target line";
-
-          return (
-            <div
-              key={view}
-              className={cn(
-                "rounded-2xl border-2 border-dashed p-6 text-center transition-colors",
-                state.uploaded
-                  ? "border-green-300 bg-green-50"
-                  : state.uploading
-                  ? "border-brand-300 bg-brand-50"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
-              )}
-            >
-              <div className="flex justify-center mb-3">
-                {state.uploaded ? (
-                  <CheckCircle className="h-10 w-10 text-green-500" />
-                ) : state.uploading ? (
-                  <Loader2 className="h-10 w-10 text-brand-600 animate-spin" />
+      {/* Image upload slots */}
+      {!analysis && (
+        <div className="grid grid-cols-2 gap-3">
+          {VIEW_LABELS.map(({ key, label, hint }) => {
+            const existing = images.find((i) => i.key === key);
+            return (
+              <div
+                key={key}
+                className={cn(
+                  "relative rounded-2xl border-2 border-dashed p-4 text-center transition-all",
+                  existing
+                    ? "border-brand-400 bg-brand-50"
+                    : "border-gray-200 hover:border-gray-300 bg-white"
+                )}
+              >
+                {existing ? (
+                  <>
+                    <img
+                      src={existing.dataUrl}
+                      alt={label}
+                      className="w-full h-24 object-cover rounded-xl mb-2"
+                    />
+                    <p className="text-xs font-medium text-brand-700">{label}</p>
+                    <button
+                      onClick={() => removeImage(key)}
+                      className="absolute top-2 right-2 h-5 w-5 bg-white rounded-full flex items-center justify-center shadow text-gray-400 hover:text-red-500"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </>
                 ) : (
-                  <Video className="h-10 w-10 text-gray-300" />
+                  <label className="cursor-pointer block">
+                    <Camera className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-gray-700">{label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{hint}</p>
+                    <span className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium">
+                      <Camera className="h-3 w-3" />
+                      Add Photo
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelect(key, file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 )}
               </div>
-
-              <h3 className="font-semibold text-gray-900 text-sm">{label}</h3>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">{hint}</p>
-
-              {state.uploaded ? (
-                <p className="mt-3 text-xs text-green-600 font-medium">
-                  ✓ {state.file?.name}
-                </p>
-              ) : !state.uploading && (
-                <label className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-medium cursor-pointer hover:bg-gray-800 transition-colors">
-                  <Upload className="h-3.5 w-3.5" />
-                  Choose Video
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileSelect(view, file);
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
-        <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Zap className="h-4 w-4 text-gold-600" />
-          Future AI Swing Analysis Will Detect:
-        </h4>
-        <div className="grid sm:grid-cols-2 gap-2">
-          {[
-            "Club path and swing plane",
-            "Early extension",
-            "Casting / over-the-top",
-            "Posture analysis",
-            "Release pattern",
-            "Strike location prediction",
-          ].map((feature) => (
-            <div key={feature} className="flex items-center gap-2 text-sm text-gray-600">
-              <div className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-              {feature}
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </div>
+      )}
 
-      <div className="flex gap-3">
-        <Button variant="outline" className="flex-1" onClick={onSkip} disabled={isAnalysing}>
-          Skip & Generate Report
-        </Button>
-        <Button
-          className="flex-1"
-          variant="gold"
-          onClick={onComplete}
-          disabled={isAnalysing}
-        >
-          {isAnalysing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Analysing...
-            </>
-          ) : (
-            <>
-              {hasVideos ? "Submit & Analyse" : "Generate My Report"}
-              <Zap className="h-4 w-4" />
-            </>
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* Analysis Results */}
+      {analysis && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Overall */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <Brain className="h-4 w-4 text-brand-600" />
+                AI Assessment
+              </h3>
+              <span className="text-xs font-medium text-gray-500 capitalize bg-gray-100 px-2 py-1 rounded-full">
+                {analysis.swingType} swing
+              </span>
+            </div>
+            <p className="text-sm text-gray-700 leading-relaxed">{analysis.overall}</p>
+
+            {/* Score grid */}
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {Object.entries(analysis.scores).map(([k, v]) => (
+                <div key={k} className="text-center">
+                  <ScoreBadge score={v} />
+                  <p className="text-xs text-gray-400 mt-1 capitalize">{k === "followThrough" ? "Follow" : k}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Strengths */}
+          {analysis.strengths.length > 0 && (
+            <div className="bg-green-50 rounded-2xl border border-green-100 p-4">
+              <h4 className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                Strengths
+              </h4>
+              <ul className="space-y-1">
+                {analysis.strengths.map((s, i) => (
+                  <li key={i} className="text-sm text-green-800 flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">•</span> {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-        </Button>
+
+          {/* Faults */}
+          {analysis.faults.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Target className="h-4 w-4 text-amber-600" />
+                Areas to Work On
+              </h4>
+              <div className="space-y-3">
+                {analysis.faults.map((fault, i) => (
+                  <div key={i} className="flex gap-2.5">
+                    <SeverityDot severity={fault.severity} />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{fault.area}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{fault.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Equipment implications */}
+          <div className="bg-gold-50 rounded-2xl border border-gold-200 p-4">
+            <h4 className="text-sm font-semibold text-gold-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-gold-600" />
+              Equipment Implications
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex gap-2">
+                <span className="font-medium text-gold-800 w-24 shrink-0">Shaft flex:</span>
+                <span className="text-gold-700">{analysis.equipmentImplications.shaftFlex}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-medium text-gold-800 w-24 shrink-0">Loft:</span>
+                <span className="text-gold-700">{analysis.equipmentImplications.loftAdjustment}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-medium text-gold-800 w-24 shrink-0">Head type:</span>
+                <span className="text-gold-700">{analysis.equipmentImplications.clubheadType}</span>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gold-200">
+                <p className="text-gold-800 italic text-xs">{analysis.equipmentImplications.summary}</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-center text-gray-400">
+            These insights have been added to your fitting session.
+          </p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        {!analysis ? (
+          <>
+            <Button variant="outline" className="flex-1" onClick={onSkip} disabled={analysing}>
+              Skip & Generate Report
+            </Button>
+            <Button
+              className="flex-1"
+              variant="gold"
+              onClick={handleAnalyse}
+              disabled={images.length === 0 || analysing}
+            >
+              {analysing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analysing...
+                </>
+              ) : (
+                <>
+                  Analyse My Swing
+                  <Zap className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </>
+        ) : (
+          <Button className="w-full" variant="gold" onClick={onComplete}>
+            Generate My Report
+            <Zap className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

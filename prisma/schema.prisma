@@ -93,8 +93,9 @@ model FittingSession {
   status      FittingStatus @default(IN_PROGRESS)
   currentStep Int           @default(1)
   source      String?
-  metadata    Json?
-  completedAt DateTime?
+  metadata      Json?
+  swingAnalysis Json?
+  completedAt   DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

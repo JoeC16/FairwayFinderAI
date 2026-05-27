@@ -38,6 +38,9 @@ export function Header() {
           <Link href="/fitting" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
             Start Fitting
           </Link>
+          <Link href="/swing-analysis" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+            Swing Analyser
+          </Link>
           <Link href="/pricing" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
             Pricing
           </Link>
@@ -121,6 +124,9 @@ export function Header() {
           <div className="flex flex-col gap-3">
             <Link href="/fitting" className="text-white/80 hover:text-white py-2" onClick={() => setMobileOpen(false)}>
               Start Fitting
+            </Link>
+            <Link href="/swing-analysis" className="text-white/80 hover:text-white py-2" onClick={() => setMobileOpen(false)}>
+              Swing Analyser
             </Link>
             <Link href="/pricing" className="text-white/80 hover:text-white py-2" onClick={() => setMobileOpen(false)}>
               Pricing
