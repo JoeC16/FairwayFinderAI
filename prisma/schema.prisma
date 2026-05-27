@@ -400,7 +400,7 @@ model ExternalPartner {
   description       String?
   tagline           String?
   website           String
-  searchUrlTemplate String?  // Use {query} as placeholder
+  searchUrlTemplate String?
   logoUrl           String?
   accentColor       String   @default("#166534")
   bgColor           String   @default("#f0fdf4")
@@ -408,10 +408,30 @@ model ExternalPartner {
   countries         String[] @default([])
   active            Boolean  @default(true)
   sortOrder         Int      @default(0)
+
+  // Scraper config
+  scraperEnabled    Boolean  @default(false)
+  scraperType       String?  // "shopify" | "jsonld"
+  scraperConfig     Json?    // reserved for future per-type overrides
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  scrapeCache ScrapeCache[]
+
   @@index([active])
+}
+
+model ScrapeCache {
+  id        String          @id @default(cuid())
+  partnerId String
+  query     String
+  results   Json
+  expiresAt DateTime
+  partner   ExternalPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, query])
+  @@index([expiresAt])
 }
 
 // ============================================================

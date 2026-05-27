@@ -28,6 +28,7 @@ interface PartnerRow {
   tagline: string | null; website: string; searchUrlTemplate: string | null;
   accentColor: string; bgColor: string; initials: string | null;
   countries: string[]; active: boolean; sortOrder: number;
+  scraperEnabled: boolean; scraperType: string | null;
 }
 
 interface Props {
@@ -39,6 +40,7 @@ const EMPTY_PARTNER = {
   name: "", slug: "", description: "", tagline: "",
   website: "", searchUrlTemplate: "", accentColor: "#166534",
   bgColor: "#f0fdf4", initials: "", countries: "", sortOrder: 0,
+  scraperEnabled: false, scraperType: "none",
 };
 
 type PartnerForm = typeof EMPTY_PARTNER;
@@ -80,11 +82,13 @@ export function RetailersAdminClient({ retailers: initRetailers, partners: initP
       initials: p.initials ?? "",
       countries: p.countries.join(", "),
       sortOrder: p.sortOrder,
+      scraperEnabled: p.scraperEnabled,
+      scraperType: p.scraperType ?? "none",
     });
     setShowModal(true);
   }
 
-  function setField(key: keyof PartnerForm, val: string | number) {
+  function setField(key: keyof PartnerForm, val: string | number | boolean) {
     setForm((f) => {
       const next = { ...f, [key]: val };
       if (key === "name" && !editing) {
@@ -102,6 +106,7 @@ export function RetailersAdminClient({ retailers: initRetailers, partners: initP
         ...form,
         countries: form.countries.split(",").map((c) => c.trim()).filter(Boolean),
         sortOrder: Number(form.sortOrder),
+        scraperType: form.scraperType === "none" ? null : form.scraperType,
       };
 
       if (editing) {
@@ -337,6 +342,15 @@ export function RetailersAdminClient({ retailers: initRetailers, partners: initP
                   {partner.searchUrlTemplate && (
                     <p className="text-xs text-brand-600 truncate mt-0.5 font-mono">{partner.searchUrlTemplate}</p>
                   )}
+                  <div className="flex items-center gap-2 mt-1">
+                    {partner.scraperEnabled && partner.scraperType ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full font-medium">
+                        ● Scraping: {partner.scraperType}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No scraper</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -442,6 +456,47 @@ export function RetailersAdminClient({ retailers: initRetailers, partners: initP
                 <Label>Sort order</Label>
                 <Input type="number" value={form.sortOrder} onChange={(e) => setField("sortOrder", Number(e.target.value))} min={0} />
               </div>
+            </div>
+
+            {/* Scraper config */}
+            <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-brand-900">Stock Scraping</p>
+                  <p className="text-xs text-brand-700 mt-0.5">
+                    When enabled, FairwayFit scans this retailer&apos;s site for recommended clubs (cached 12 hours).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setField("scraperEnabled", !form.scraperEnabled)}
+                  className="text-brand-600 hover:text-brand-800"
+                >
+                  {form.scraperEnabled
+                    ? <ToggleRight className="h-7 w-7 text-brand-600" />
+                    : <ToggleLeft className="h-7 w-7 text-gray-400" />}
+                </button>
+              </div>
+
+              {form.scraperEnabled && (
+                <div className="space-y-1.5">
+                  <Label>Scraper type</Label>
+                  <select
+                    value={form.scraperType}
+                    onChange={(e) => setField("scraperType", e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="none">— Select type —</option>
+                    <option value="shopify">Shopify (/search.json API)</option>
+                    <option value="jsonld">JSON-LD (structured product schema in HTML)</option>
+                  </select>
+                  <p className="text-xs text-brand-700">
+                    {form.scraperType === "shopify" && "Works for Shopify stores. Calls /search.json — fast and reliable."}
+                    {form.scraperType === "jsonld" && "Fetches the search page and extracts Product schema from the HTML. Works on most SEO-optimised stores."}
+                    {form.scraperType === "none" && "Choose a type to enable scraping."}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Preview */}

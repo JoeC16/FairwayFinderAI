@@ -1,7 +1,4 @@
 import { db } from "@/lib/db";
-import { Badge } from "@/components/ui/badge";
-import { Store } from "lucide-react";
-import { format } from "date-fns";
 import { RetailersAdminClient } from "./retailers-admin-client";
 
 export default async function AdminRetailersPage() {
@@ -46,6 +43,8 @@ export default async function AdminRetailersPage() {
         countries: p.countries,
         active: p.active,
         sortOrder: p.sortOrder,
+        scraperEnabled: p.scraperEnabled,
+        scraperType: p.scraperType,
       }))}
     />
   );
