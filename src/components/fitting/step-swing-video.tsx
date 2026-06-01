@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Camera, CheckCircle, X, Brain, AlertCircle, Zap, TrendingUp, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resizeImage } from "@/lib/resize-image";
 import type { SwingAnalysis } from "@/lib/ai/swing-analyser";
 
 interface Props {
@@ -35,16 +36,12 @@ export function StepSwingVideo({ sessionId, onComplete, onSkip }: Props) {
   const [analysis, setAnalysis] = useState<SwingAnalysis | null>(null);
   const [error, setError] = useState("");
 
-  const handleFileSelect = useCallback((key: string, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setImages((prev) => {
-        const filtered = prev.filter((img) => img.key !== key);
-        return [...filtered, { key, dataUrl, name: file.name }];
-      });
-    };
-    reader.readAsDataURL(file);
+  const handleFileSelect = useCallback(async (key: string, file: File) => {
+    const dataUrl = await resizeImage(file, 1024, 0.85);
+    setImages((prev) => {
+      const filtered = prev.filter((img) => img.key !== key);
+      return [...filtered, { key, dataUrl, name: file.name }];
+    });
   }, []);
 
   const removeImage = useCallback((key: string) => {

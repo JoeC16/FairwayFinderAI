@@ -8,6 +8,7 @@ import {
   Loader2, AlertCircle, ArrowRight, Zap, ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resizeImage } from "@/lib/resize-image";
 import type { SwingAnalysis } from "@/lib/ai/swing-analyser";
 
 const VIEW_LABELS = [
@@ -28,13 +29,9 @@ export default function SwingAnalysisPage() {
   const [analysis, setAnalysis] = useState<SwingAnalysis | null>(null);
   const [error, setError] = useState("");
 
-  const handleFileSelect = useCallback((key: string, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setImages((prev) => [...prev.filter((i) => i.key !== key), { key, dataUrl }]);
-    };
-    reader.readAsDataURL(file);
+  const handleFileSelect = useCallback(async (key: string, file: File) => {
+    const dataUrl = await resizeImage(file, 1024, 0.85);
+    setImages((prev) => [...prev.filter((i) => i.key !== key), { key, dataUrl }]);
   }, []);
 
   const removeImage = useCallback((key: string) => {
