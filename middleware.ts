@@ -36,6 +36,7 @@ export default withAuth(
           "/fitting",
           "/embed",
           "/swing-analysis",
+          "/setup",
           "/api/auth",
           "/api/fitting",
           "/api/widget",
