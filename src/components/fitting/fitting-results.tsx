@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { ConfidenceMeter } from "./confidence-meter";
 import { RecommendationCard } from "./recommendation-card";
 import { GapChart } from "./gap-chart";
 import { PartnerRetailers } from "./partner-retailers";
+import { UnlockPaywall } from "./unlock-paywall";
 import {
   Download,
   Share2,
@@ -18,8 +19,6 @@ import {
   BarChart3,
   Zap,
   TrendingUp,
-  ChevronDown,
-  ChevronUp,
   CheckCircle,
   AlertCircle,
   Info,
@@ -39,13 +38,13 @@ interface FittingResultData {
   id: string;
   overallConfidence: number;
   confidenceScores: unknown;
-  driverRec: unknown;
-  ironRec: unknown;
-  wedgeRec: unknown;
-  shaftRec: unknown;
-  lieLengthRec: unknown;
-  bagGapAnalysis: unknown;
-  upgradeOrder: unknown;
+  driverRec: unknown | null;
+  ironRec: unknown | null;
+  wedgeRec: unknown | null;
+  shaftRec: unknown | null;
+  lieLengthRec: unknown | null;
+  bagGapAnalysis: unknown | null;
+  upgradeOrder: unknown | null;
   aiSummary: string | null;
   pdfUrl: string | null;
 }
@@ -54,38 +53,48 @@ interface Props {
   sessionId: string;
   playerName: string;
   result: FittingResultData;
+  isUnlocked: boolean;
+  isSignedIn: boolean;
 }
 
-export function FittingResults({ sessionId, playerName, result }: Props) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["driver"]));
+function readGuestToken(sessionId: string): string {
+  if (typeof window === "undefined") return "";
+  const fromStorage = sessionStorage.getItem(`fitting_token_${sessionId}`);
+  if (fromStorage) return fromStorage;
+  const match = document.cookie.split(";").find((c) => c.trim().startsWith("ff_pending_claim="));
+  if (match) {
+    const value = match.split("=")[1]?.trim() ?? "";
+    const [cookieSessionId, token] = value.split(":");
+    if (cookieSessionId === sessionId && token) return token;
+  }
+  return "";
+}
+
+export function FittingResults({ sessionId, playerName, result, isUnlocked, isSignedIn }: Props) {
   const [downloading, setDownloading] = useState(false);
+  const [guestToken, setGuestToken] = useState("");
+
+  useEffect(() => {
+    setGuestToken(readGuestToken(sessionId));
+  }, [sessionId]);
 
   const confidence = result.confidenceScores as FullConfidenceReport;
-  const driverRec = result.driverRec as DriverRecommendation;
-  const ironRec = result.ironRec as IronRecommendation;
-  const wedgeRec = result.wedgeRec as WedgeRecommendation;
-  const bagGaps = result.bagGapAnalysis as BagGapAnalysis;
-  const upgrades = result.upgradeOrder as UpgradePriority[];
+  const driverRec = result.driverRec as DriverRecommendation | null;
+  const ironRec = result.ironRec as IronRecommendation | null;
+  const wedgeRec = result.wedgeRec as WedgeRecommendation | null;
+  const bagGaps = result.bagGapAnalysis as BagGapAnalysis | null;
+  const upgrades = result.upgradeOrder as UpgradePriority[] | null;
 
   const overallTier = getConfidenceTier(result.overallConfidence);
   const tierLabel = getConfidenceTierLabel(overallTier);
   const tierColor = getConfidenceTierColor(overallTier);
 
-  function toggleSection(id: string) {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   async function downloadPDF() {
     setDownloading(true);
     try {
-      const guestToken = typeof window !== "undefined" ? sessionStorage.getItem(`fitting_token_${sessionId}`) : null;
+      const token = readGuestToken(sessionId);
       const headers: Record<string, string> = {};
-      if (guestToken) headers["x-guest-token"] = guestToken;
+      if (token) headers["x-guest-token"] = token;
       const res = await fetch(`/api/fitting/${sessionId}/report`, { method: "POST", headers });
       if (!res.ok) throw new Error("PDF generation failed");
       const blob = await res.blob();
@@ -102,17 +111,87 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
     }
   }
 
+  const saveCallbackUrl = encodeURIComponent(
+    `/fitting/${sessionId}/results${guestToken ? `?guestToken=${guestToken}` : ""}`
+  );
+
+  // ── TEASER MODE ───────────────────────────────────────────────────────────
+  if (!isUnlocked) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="gradient-hero px-4 py-10 sm:px-6">
+          <div className="mx-auto max-w-5xl">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Trophy className="h-6 w-6 text-gold-400" />
+                <span className="text-gold-400 text-sm font-semibold uppercase tracking-wider">Analysis Complete</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                {playerName}&apos;s Fitting Report
+              </h1>
+              <p className="text-white/60 mt-2">Your AI analysis is ready — unlock to see your full recommendations</p>
+            </div>
+
+            <div className="glass rounded-2xl p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                <div className="flex items-center gap-6">
+                  <ConfidenceMeter score={result.overallConfidence} size="lg" />
+                  <div>
+                    <p className="text-white/60 text-sm">Overall Fit Confidence</p>
+                    <p className={cn("text-xl font-bold mt-0.5", tierColor)}>{tierLabel}</p>
+                    <p className="text-white/50 text-xs mt-1 max-w-xs leading-relaxed">
+                      {confidence?.overall?.explanation}
+                    </p>
+                  </div>
+                </div>
+                <div className="sm:ml-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Driver", score: confidence?.driver?.score },
+                    { label: "Irons", score: confidence?.irons?.score },
+                    { label: "Wedges", score: confidence?.wedges?.score },
+                    { label: "Bag Gaps", score: confidence?.bagGapping?.score },
+                  ].map(({ label, score }) => (
+                    <div key={label} className="glass-dark rounded-xl p-3 text-center">
+                      <p className={cn("text-lg font-bold", getConfidenceTierColor(getConfidenceTier(score ?? 0)))}>
+                        {score ?? 0}%
+                      </p>
+                      <p className="text-white/50 text-xs mt-0.5">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {result.aiSummary && (
+                <p className="text-white/70 text-sm mt-4 border-t border-white/10 pt-4 leading-relaxed">
+                  {result.aiSummary}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        <UnlockPaywall sessionId={sessionId} isSignedIn={isSignedIn} />
+      </div>
+    );
+  }
+
+  // ── FULL REPORT MODE ──────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="gradient-hero px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-5xl">
           <Link
-            href="/dashboard"
+            href={isSignedIn ? "/dashboard" : "/"}
             className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            {isSignedIn ? "Back to Dashboard" : "Back to Home"}
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
@@ -154,7 +233,6 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
                 </div>
               </div>
 
-              {/* Mini confidence grid */}
               <div className="sm:ml-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   { label: "Driver", score: confidence?.driver?.score },
@@ -178,14 +256,14 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
       {/* Content */}
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-6">
         {/* Upgrade Priorities */}
-        {upgrades?.length > 0 && (
+        {(upgrades?.length ?? 0) > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-2 mb-5">
               <TrendingUp className="h-5 w-5 text-brand-700" />
               <h2 className="text-lg font-bold text-gray-900">Upgrade Priorities</h2>
             </div>
             <div className="space-y-3">
-              {upgrades.slice(0, 4).map((upgrade) => (
+              {(upgrades ?? []).slice(0, 4).map((upgrade) => (
                 <div key={upgrade.rank} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50">
                   <div className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white",
@@ -219,11 +297,11 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
         <Tabs defaultValue="driver" className="space-y-4">
           <TabsList className="w-full h-auto flex-wrap gap-1 bg-white border border-gray-100 p-2 rounded-2xl">
             {[
-              { value: "driver", label: "Driver", icon: Target },
-              { value: "irons", label: "Irons", icon: BarChart3 },
-              { value: "wedges", label: "Wedges", icon: Zap },
-              { value: "shafts", label: "Shafts", icon: TrendingUp },
-              { value: "gaps", label: "Bag Gaps", icon: BarChart3 },
+              { value: "driver", label: "Driver" },
+              { value: "irons", label: "Irons" },
+              { value: "wedges", label: "Wedges" },
+              { value: "shafts", label: "Shafts" },
+              { value: "gaps", label: "Bag Gaps" },
             ].map(({ value, label }) => (
               <TabsTrigger key={value} value={value} className="flex-1 min-w-[80px]">
                 {label}
@@ -258,7 +336,7 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
         </Tabs>
 
         {/* Missing data prompts */}
-        {confidence?.overall?.missingData?.length > 0 && (
+        {(confidence?.overall?.missingData?.length ?? 0) > 0 && (
           <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -268,7 +346,7 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
               Adding the following data would improve recommendation accuracy:
             </p>
             <ul className="space-y-1.5">
-              {confidence.overall.missingData.map((item) => (
+              {(confidence?.overall?.missingData ?? []).map((item) => (
                 <li key={item} className="flex items-center gap-2 text-sm text-amber-700">
                   <Info className="h-3.5 w-3.5 shrink-0" />
                   {item}
@@ -290,20 +368,32 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
           ].filter(Boolean) as string[]}
         />
 
-        {/* CTA */}
+        {/* Bottom CTA — auth-aware */}
         <div className="gradient-hero rounded-2xl p-8 text-center">
-          <h3 className="text-xl font-bold text-white mb-2">Save Your Full Report</h3>
+          <h3 className="text-xl font-bold text-white mb-2">
+            {isSignedIn ? "Save Your Full Report" : "Save this report to your account"}
+          </h3>
           <p className="text-white/70 text-sm mb-6">
-            Download your personalised PDF or save to your dashboard to revisit anytime.
+            {isSignedIn
+              ? "Download your personalised PDF or save to your dashboard to revisit anytime."
+              : "Create a free account to save this report, track your fittings, and access your results anytime."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button variant="gold" size="lg" onClick={downloadPDF} disabled={downloading}>
               <Download className="h-4 w-4" />
               Download Full Report
             </Button>
-            <Button variant="hero" size="lg" asChild>
-              <Link href="/dashboard">Save to Dashboard</Link>
-            </Button>
+            {isSignedIn ? (
+              <Button variant="hero" size="lg" asChild>
+                <Link href="/dashboard">Save to Dashboard</Link>
+              </Button>
+            ) : (
+              <Button variant="hero" size="lg" asChild>
+                <Link href={`/auth/sign-up?callbackUrl=${saveCallbackUrl}`}>
+                  Create Free Account
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -311,7 +401,7 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
   );
 }
 
-function DriverSection({ rec, confidence }: { rec: DriverRecommendation; confidence: number }) {
+function DriverSection({ rec, confidence }: { rec: DriverRecommendation | null; confidence: number }) {
   if (!rec) return null;
   return (
     <div className="space-y-4">
@@ -360,7 +450,7 @@ function DriverSection({ rec, confidence }: { rec: DriverRecommendation; confide
   );
 }
 
-function IronSection({ rec, confidence }: { rec: IronRecommendation; confidence: number }) {
+function IronSection({ rec, confidence }: { rec: IronRecommendation | null; confidence: number }) {
   if (!rec) return null;
   return (
     <div className="space-y-4">
@@ -421,7 +511,7 @@ function IronSection({ rec, confidence }: { rec: IronRecommendation; confidence:
   );
 }
 
-function WedgeSection({ rec, confidence }: { rec: WedgeRecommendation; confidence: number }) {
+function WedgeSection({ rec, confidence }: { rec: WedgeRecommendation | null; confidence: number }) {
   if (!rec) return null;
   return (
     <div className="space-y-4">
@@ -476,7 +566,8 @@ function WedgeSection({ rec, confidence }: { rec: WedgeRecommendation; confidenc
   );
 }
 
-function GapSection({ gaps }: { gaps: BagGapAnalysis }) {
+function GapSection({ gaps }: { gaps: BagGapAnalysis | null }) {
+  if (!gaps) return null;
   const gradingColors = {
     excellent: "text-green-600",
     good: "text-emerald-600",
