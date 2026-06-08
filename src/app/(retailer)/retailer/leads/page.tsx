@@ -73,7 +73,8 @@ export default async function LeadsPage() {
             <p className="text-sm text-gray-400">Leads are automatically created when visitors complete a fitting on your widget.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+        <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-50 text-left">
                 <th className="px-5 py-3 font-medium text-gray-500">Contact</th>
@@ -108,7 +109,7 @@ export default async function LeadsPage() {
                   </td>
                   <td className="px-5 py-3 text-gray-500">
                     {lead.session?.playerProfile?.handicap != null
-                      ? `+${lead.session.playerProfile.handicap}` || String(lead.session.playerProfile.handicap)
+                      ? lead.session.playerProfile.handicap
                       : "—"}
                   </td>
                   <td className="px-5 py-3">
@@ -134,6 +135,7 @@ export default async function LeadsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

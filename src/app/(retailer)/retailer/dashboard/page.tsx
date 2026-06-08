@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TrialBanner } from "@/components/retailer/trial-banner";
+import { EmbedCodeBlock } from "@/components/retailer/embed-code-block";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -241,9 +242,7 @@ export default async function RetailerDashboardPage() {
           <div className="flex-1">
             <h3 className="font-semibold text-white">Widget Embed Code</h3>
             <p className="text-white/60 text-sm mt-0.5 mb-4">Add this to your website to embed the fitting tool</p>
-            <div className="bg-black/30 rounded-xl p-4 font-mono text-xs text-green-400 overflow-x-auto">
-              <pre>{embedCode}</pre>
-            </div>
+            <EmbedCodeBlock code={embedCode} />
             <Button size="sm" variant="gold" className="mt-4" asChild>
               <Link href="/retailer/settings">Customise Widget</Link>
             </Button>

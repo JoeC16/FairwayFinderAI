@@ -2,9 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Shield, CreditCard, Bell } from "lucide-react";
+import { CreditCard, Bell, Shield } from "lucide-react";
+import { SettingsSecurityClient } from "./settings-security-client";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -45,38 +44,14 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {/* Security */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50">
-            <Shield className="h-5 w-5 text-brand-700" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-gray-900">Security</h2>
-            <p className="text-sm text-gray-400">Password and authentication</p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between py-3 border-b border-gray-50">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Email</p>
-              <p className="text-xs text-gray-400">{user.email}</p>
-            </div>
-            <Badge variant="success" className="text-xs">Verified</Badge>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Password</p>
-              <p className="text-xs text-gray-400">{user.password ? "Set" : "Using social login"}</p>
-            </div>
-            {user.password && (
-              <Button size="sm" variant="outline">Change</Button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Security — client component so it can open modals */}
+      <SettingsSecurityClient
+        email={user.email!}
+        hasPassword={!!user.password}
+        userId={user.id}
+      />
 
-      {/* Notifications placeholder */}
+      {/* Notifications */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
@@ -87,14 +62,13 @@ export default async function SettingsPage() {
             <p className="text-sm text-gray-400">Email preferences</p>
           </div>
         </div>
-        <p className="text-sm text-gray-400">Notification preferences coming soon.</p>
-      </div>
-
-      {/* Danger zone */}
-      <div className="bg-red-50 rounded-2xl border border-red-100 p-6">
-        <h2 className="font-semibold text-red-900 mb-1">Danger Zone</h2>
-        <p className="text-sm text-red-700 mb-4">Permanently delete your account and all associated data.</p>
-        <Button variant="destructive" size="sm">Delete Account</Button>
+        <div className="flex items-center justify-between py-2">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Fitting complete emails</p>
+            <p className="text-xs text-gray-400">Get notified when your AI report is ready</p>
+          </div>
+          <Badge variant="success" className="text-xs">On</Badge>
+        </div>
       </div>
     </div>
   );

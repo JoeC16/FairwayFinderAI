@@ -23,6 +23,7 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Loader2,
 } from "lucide-react";
 import { cn, getConfidenceTier, getConfidenceTierLabel, getConfidenceTierColor, formatCurrency } from "@/lib/utils";
 import type {
@@ -82,7 +83,7 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
   async function downloadPDF() {
     setDownloading(true);
     try {
-      const guestToken = typeof window !== "undefined" ? sessionStorage.getItem("guestToken") : null;
+      const guestToken = typeof window !== "undefined" ? sessionStorage.getItem(`fitting_token_${sessionId}`) : null;
       const headers: Record<string, string> = {};
       if (guestToken) headers["x-guest-token"] = guestToken;
       const res = await fetch(`/api/fitting/${sessionId}/report`, { method: "POST", headers });
@@ -129,8 +130,8 @@ export function FittingResults({ sessionId, playerName, result }: Props) {
             </div>
 
             <div className="flex gap-3 shrink-0">
-              <Button variant="hero" size="sm" onClick={downloadPDF} disabled={downloading}>
-                <Download className="h-4 w-4" />
+              <Button variant="hero" size="sm" onClick={downloadPDF} disabled={downloading} aria-label="Download PDF report">
+                {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 {downloading ? "Generating..." : "Download PDF"}
               </Button>
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">

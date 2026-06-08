@@ -25,6 +25,7 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-50 text-left">
@@ -61,6 +62,7 @@ export default async function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+        </div>
 
         {users.length === 0 && (
           <div className="p-12 text-center">
