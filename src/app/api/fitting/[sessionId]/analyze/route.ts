@@ -3,6 +3,9 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { runFittingEngine } from "@/lib/engines/fitting-engine";
 import { matchInventory } from "@/lib/engines/inventory-matching-engine";
+import { incrementFittingsUsed } from "@/lib/fitting-quota";
+import { sendEmail } from "@/lib/email";
+import { fittingCompleteEmail } from "@/lib/email/templates";
 import type { FittingEngineInput, DistanceMatrixInput, CurrentBagInput, ShotTendenciesInput, LaunchMonitorInput } from "@/types/fitting";
 
 interface Params {
@@ -152,6 +155,18 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id: sessionId },
       data: { status: "COMPLETED", completedAt: new Date() },
     });
+
+    // Increment retailer fitting usage + send report email
+    if (session.retailerId) {
+      await incrementFittingsUsed(session.retailerId);
+    }
+    if (session.playerProfile?.email) {
+      await sendEmail({
+        to: session.playerProfile.email,
+        subject: "Your FairwayFit AI report is ready",
+        html: fittingCompleteEmail(session.playerProfile.name, sessionId),
+      });
+    }
 
     return NextResponse.json({
       resultId: storedResult.id,

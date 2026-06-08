@@ -70,6 +70,7 @@ model User {
   retailer        Retailer?
   subscription    Subscription?
   notifications   Notification[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([email])
   @@index([role])
@@ -595,4 +596,15 @@ model Notification {
 
   @@index([userId])
   @@index([read])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
 }

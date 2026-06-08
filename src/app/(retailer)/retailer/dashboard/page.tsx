@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { TrialBanner } from "@/components/retailer/trial-banner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -70,7 +71,14 @@ export default async function RetailerDashboardPage() {
   const embedCode = `<script src="${process.env.NEXT_PUBLIC_APP_URL}/widget.js" data-retailer="${retailer.slug}"></script>\n<div id="fairwayfit-widget"></div>`;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
+    <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+      <TrialBanner
+        status={retailer.subscription?.status ?? "trialing"}
+        trialEndsAt={retailer.trialEndsAt?.toISOString() ?? null}
+        fittingsUsed={retailer.subscription?.fittingsUsed ?? 0}
+        fittingsLimit={retailer.subscription?.fittingsLimit ?? 50}
+        plan={retailer.plan}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{retailer.name}</h1>
