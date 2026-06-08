@@ -153,16 +153,71 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* Consumer pricing note */}
-        <div className="mt-16 bg-gray-50 rounded-2xl p-8 text-center">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">For Individual Golfers</h3>
-          <p className="text-gray-500 mb-6">
-            FairwayFit AI is completely free for golfers. Get unlimited AI-powered fitting reports,
-            PDF downloads, and equipment recommendations — no subscription needed.
-          </p>
-          <Button asChild>
-            <Link href="/auth/sign-up">Start Free Fitting</Link>
-          </Button>
+        {/* Consumer pricing */}
+        <div className="mt-20">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-gray-900">For Individual Golfers</h2>
+            <p className="text-gray-500 mt-2">Run your fitting for free. Unlock the full report when you&apos;re ready.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Free tier */}
+            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Free Preview</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-gray-900">£0</span>
+              </div>
+              <ul className="space-y-2.5 mb-8">
+                {[
+                  "Full AI fitting wizard",
+                  "Overall confidence score",
+                  "Shot tendency summary",
+                  "Category fit indicators",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <Check className="h-4 w-4 text-brand-600 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button variant="outline" size="lg" className="w-full" asChild>
+                <Link href="/fitting/new">Start Free Fitting</Link>
+              </Button>
+            </div>
+
+            {/* Unlock tier */}
+            <div className="bg-brand-900 rounded-2xl border border-brand-800 p-8 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge variant="gold" className="px-4 py-1 text-xs font-semibold">One-Time</Badge>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-1">Full Report</h3>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-white">£4.99</span>
+                <span className="text-white/50 text-sm ml-1">per report</span>
+              </div>
+              <ul className="space-y-2.5 mb-8">
+                {[
+                  "Everything in Free Preview",
+                  "Specific club & brand recommendations",
+                  "Full specs: loft, flex, shaft weight",
+                  "Bag gap analysis & chart",
+                  "Upgrade priority order",
+                  "Downloadable PDF report",
+                  "10 fitting credits for future reports",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-white/80">
+                    <Check className="h-4 w-4 text-gold-400 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button variant="gold" size="lg" className="w-full" asChild>
+                <Link href="/fitting/new">Start Fitting</Link>
+              </Button>
+              <p className="text-center text-white/40 text-xs mt-4">
+                Payment required only after your analysis is complete
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* FAQ */}
@@ -184,7 +239,7 @@ export default function PricingPage() {
               },
               {
                 q: "Can golfers use my widget without creating an account?",
-                a: "Yes. Golfers can complete a full fitting as guests. Their contact info is captured as a lead for your sales team.",
+                a: "Yes. Golfers can complete a full fitting as guests. Their contact info is captured as a lead for your sales team. The £4.99 report unlock only applies to direct consumer fittings, not retailer-embedded widget fittings.",
               },
               {
                 q: "Do you offer custom pricing for large groups?",
