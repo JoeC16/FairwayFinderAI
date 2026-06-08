@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import { Bell, LogOut, User, Menu } from "lucide-react";
+import { Bell, LogOut, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +19,7 @@ export function DashboardNav({ user }: Props) {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-gray-100 bg-white px-6">
       <div className="flex items-center gap-3">
-        <button className="lg:hidden text-gray-500">
-          <Menu className="h-5 w-5" />
-        </button>
+        <div className="lg:hidden w-9" /> {/* spacer for mobile menu button */}
         <div className="hidden sm:block">
           <p className="text-sm text-gray-500">Welcome back,</p>
           <p className="text-sm font-semibold text-gray-900 -mt-0.5">{user.name ?? user.email}</p>
