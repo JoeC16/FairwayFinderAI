@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/email/templates";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(100),
@@ -44,6 +46,12 @@ export async function POST(req: Request) {
           },
         },
       },
+    });
+
+    await sendEmail({
+      to: email,
+      subject: `Welcome to FairwayFit AI`,
+      html: welcomeEmail(name, role === "retailer" ? "RETAILER" : "CONSUMER"),
     });
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });

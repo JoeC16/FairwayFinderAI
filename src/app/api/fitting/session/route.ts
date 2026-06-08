@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateGuestToken } from "@/lib/utils";
+import { checkFittingQuota } from "@/lib/fitting-quota";
 import { z } from "zod";
 
 const createSessionSchema = z.object({
@@ -15,6 +16,18 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     const body = await req.json().catch(() => ({}));
     const { retailerId, source } = createSessionSchema.parse(body);
+
+    // Enforce quota for retailer-linked sessions
+    if (retailerId) {
+      const quota = await checkFittingQuota(retailerId);
+      if (!quota.allowed) {
+        const message =
+          quota.reason === "trial_expired"
+            ? "Your free trial has expired. Please upgrade to continue."
+            : "You have reached your monthly fitting limit. Please upgrade your plan.";
+        return NextResponse.json({ error: message, reason: quota.reason }, { status: 403 });
+      }
+    }
 
     const guestToken = generateGuestToken();
 

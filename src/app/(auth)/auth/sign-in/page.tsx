@@ -23,7 +23,11 @@ function SignInForm() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", { email, password, redirect: false });
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
     if (result?.error) {
       setError("Invalid email or password");
@@ -36,7 +40,11 @@ function SignInForm() {
 
   return (
     <div className="glass rounded-2xl p-8 space-y-6">
-      <Button variant="hero" className="w-full" onClick={() => signIn("google", { callbackUrl })}>
+      <Button
+        variant="hero"
+        className="w-full"
+        onClick={() => signIn("google", { callbackUrl })}
+      >
         <Chrome className="h-4 w-4" />
         Continue with Google
       </Button>
@@ -58,9 +66,14 @@ function SignInForm() {
           <Label className="text-white/80">Email</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input type="email" placeholder="you@example.com" value={email}
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40" required />
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              required
+            />
           </div>
         </div>
 
@@ -73,9 +86,14 @@ function SignInForm() {
           </div>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input type="password" placeholder="••••••••" value={password}
+            <Input
+              type="password"
+              placeholder="••••••••"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40" required />
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              required
+            />
           </div>
         </div>
 
@@ -86,7 +104,9 @@ function SignInForm() {
 
       <p className="text-center text-white/60 text-sm">
         Don&apos;t have an account?{" "}
-        <Link href="/auth/sign-up" className="text-gold-400 hover:text-gold-300 font-medium">Create one free</Link>
+        <Link href="/auth/sign-up" className="text-gold-400 hover:text-gold-300 font-medium">
+          Create one free
+        </Link>
       </p>
     </div>
   );
@@ -109,7 +129,7 @@ export default function SignInPage() {
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>
           <p className="text-white/60 mt-2">Sign in to your account</p>
         </div>
-        <Suspense fallback={<div className="glass rounded-2xl p-8 text-center"><p className="text-white/60">Loading...</p></div>}>
+        <Suspense fallback={<div className="glass rounded-2xl p-8" />}>
           <SignInForm />
         </Suspense>
       </div>

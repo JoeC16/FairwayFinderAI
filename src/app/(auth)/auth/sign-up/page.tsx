@@ -36,11 +36,7 @@ function SignUpForm() {
         throw new Error(data.error ?? "Registration failed");
       }
 
-      await signIn("credentials", {
-        email,
-        password,
-        callbackUrl: role === "retailer" ? "/retailer/dashboard" : "/dashboard",
-      });
+      await signIn("credentials", { email, password, callbackUrl: role === "retailer" ? "/retailer/dashboard" : "/dashboard" });
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);
@@ -49,7 +45,11 @@ function SignUpForm() {
 
   return (
     <div className="glass rounded-2xl p-8 space-y-6">
-      <Button variant="hero" className="w-full" onClick={() => signIn("google", { callbackUrl: "/dashboard" })}>
+      <Button
+        variant="hero"
+        className="w-full"
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+      >
         <Chrome className="h-4 w-4" />
         Continue with Google
       </Button>
@@ -71,8 +71,13 @@ function SignUpForm() {
           <Label className="text-white/80">Full Name</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input placeholder="John Smith" value={name} onChange={(e) => setName(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40" required />
+            <Input
+              placeholder="John Smith"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              required
+            />
           </div>
         </div>
 
@@ -80,9 +85,14 @@ function SignUpForm() {
           <Label className="text-white/80">Email</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input type="email" placeholder="you@example.com" value={email}
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40" required />
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              required
+            />
           </div>
         </div>
 
@@ -90,14 +100,22 @@ function SignUpForm() {
           <Label className="text-white/80">Password</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input type="password" placeholder="At least 8 characters" minLength={8} value={password}
+            <Input
+              type="password"
+              placeholder="At least 8 characters"
+              minLength={8}
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40" required />
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              required
+            />
           </div>
         </div>
 
         <Button type="submit" className="w-full" variant="gold" size="lg" disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : role === "retailer" ? "Start Free Trial" : "Create Account"}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : role === "retailer" ? "Start Free Trial" : "Create Account"}
         </Button>
 
         <p className="text-center text-white/40 text-xs">
@@ -109,7 +127,9 @@ function SignUpForm() {
 
       <p className="text-center text-white/60 text-sm">
         Already have an account?{" "}
-        <Link href="/auth/sign-in" className="text-gold-400 hover:text-gold-300 font-medium">Sign in</Link>
+        <Link href="/auth/sign-in" className="text-gold-400 hover:text-gold-300 font-medium">
+          Sign in
+        </Link>
       </p>
     </div>
   );
@@ -130,12 +150,11 @@ export default function SignUpPage() {
             <span className="text-2xl font-bold text-white">FairwayFit <span className="text-gold-400">AI</span></span>
           </Link>
           <h1 className="text-2xl font-bold text-white">Create your account</h1>
-          <p className="text-white/60 mt-2">
-            {/* role not available here — shown inside form */}
-            Free to get started
+          <p className="text-white/60 mt-2" suppressHydrationWarning>
+            Start your journey
           </p>
         </div>
-        <Suspense fallback={<div className="glass rounded-2xl p-8 text-center"><p className="text-white/60">Loading...</p></div>}>
+        <Suspense fallback={<div className="glass rounded-2xl p-8" />}>
           <SignUpForm />
         </Suspense>
       </div>

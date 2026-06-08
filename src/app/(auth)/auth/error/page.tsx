@@ -50,11 +50,7 @@ export default function AuthErrorPage() {
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <Suspense fallback={
-          <div className="glass rounded-2xl p-8 text-center">
-            <p className="text-white/60 text-sm">Loading...</p>
-          </div>
-        }>
+        <Suspense fallback={<div className="glass rounded-2xl p-8" />}>
           <ErrorContent />
         </Suspense>
       </div>

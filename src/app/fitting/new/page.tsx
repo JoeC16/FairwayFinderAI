@@ -4,7 +4,7 @@ import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-function NewFittingInner() {
+function NewFittingRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const retailerId = searchParams.get("retailer");
@@ -35,24 +35,18 @@ function NewFittingInner() {
     createSession();
   }, [retailerId, router]);
 
-  return (
-    <div className="text-center">
-      <Loader2 className="h-8 w-8 text-gold-400 animate-spin mx-auto mb-4" />
-      <p className="text-white/80 text-lg font-medium">Setting up your fitting session...</p>
-    </div>
-  );
+  return null;
 }
 
 export default function NewFittingPage() {
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center">
-      <Suspense fallback={
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 text-gold-400 animate-spin mx-auto mb-4" />
-          <p className="text-white/80 text-lg font-medium">Setting up your fitting session...</p>
-        </div>
-      }>
-        <NewFittingInner />
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 text-gold-400 animate-spin mx-auto mb-4" />
+        <p className="text-white/80 text-lg font-medium">Setting up your fitting session...</p>
+      </div>
+      <Suspense>
+        <NewFittingRedirect />
       </Suspense>
     </div>
   );

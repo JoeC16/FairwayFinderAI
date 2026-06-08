@@ -35,9 +35,13 @@ export default withAuth(
           "/auth",
           "/fitting",
           "/embed",
+          "/swing-analysis",
           "/api/auth",
           "/api/fitting",
           "/api/widget",
+          "/api/stripe",
+          "/api/webhooks",
+          "/api/swing-analysis",
           "/widget.js",
         ];
 

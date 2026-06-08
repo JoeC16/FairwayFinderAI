@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -16,7 +16,6 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.54.0",
     "@aws-sdk/client-s3": "^3.699.0",
     "@aws-sdk/s3-request-presigner": "^3.699.0",
     "@hookform/resolvers": "^3.9.1",
@@ -51,7 +50,7 @@
     "next": "^15.1.0",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.4",
-    "nodemailer": "^7.0.7",
+    "nodemailer": "^7.0.13",
     "papaparse": "^5.4.1",
     "pdfkit": "^0.15.1",
     "react": "^19.0.0",
