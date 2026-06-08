@@ -6,8 +6,6 @@ import { subscriptionActiveEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
-
 const PLAN_LIMITS: Record<string, number> = {
   STARTER: 50,
   PROFESSIONAL: 300,
@@ -18,9 +16,11 @@ export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
 
-  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET || !process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Missing configuration" }, { status: 400 });
   }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" });
 
   let event: Stripe.Event;
   try {
@@ -64,13 +64,11 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Also update plan on the Retailer itself
       await db.retailer.update({
         where: { id: retailerId },
         data: { plan: plan as "STARTER" | "PROFESSIONAL" | "ENTERPRISE" },
       });
 
-      // Send confirmation email
       const retailer = await db.retailer.findUnique({ where: { id: retailerId } });
       if (retailer) {
         await sendEmail({

@@ -4,8 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
-
 const PLAN_PRICE_IDS: Record<string, string | undefined> = {
   STARTER: process.env.STRIPE_PRICE_RETAILER_STARTER,
   PROFESSIONAL: process.env.STRIPE_PRICE_RETAILER_PROFESSIONAL,
@@ -23,6 +21,8 @@ export async function POST(req: NextRequest) {
   if (!session || session.user.role !== "RETAILER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
   const { plan } = await req.json() as { plan: string };
   const priceId = PLAN_PRICE_IDS[plan?.toUpperCase()];

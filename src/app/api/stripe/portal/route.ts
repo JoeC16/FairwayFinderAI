@@ -4,13 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
-
 export async function POST() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "RETAILER") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
   const retailer = await db.retailer.findUnique({
     where: { userId: session.user.id },
