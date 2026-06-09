@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ConfidenceMeter } from "./confidence-meter";
 import { ExternalLink, ShoppingCart, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getAffiliateLinks } from "@/lib/affiliate";
 import type { ProductRec } from "@/types/fitting";
 import { cn } from "@/lib/utils";
 

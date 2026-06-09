@@ -68,6 +68,15 @@ export function trialExpiringEmail(name: string, daysLeft: number, upgradeUrl: s
   `);
 }
 
+export function reportUnlockedEmail(name: string, sessionId: string) {
+  return base(`
+    ${h1("Your full fitting report is unlocked!")}
+    ${p(`Hi ${name}, your full personalised fitting report is now available. You've also received 10 fitting credits to use on future fittings.`)}
+    ${btn(`${APP_URL}/fitting/${sessionId}/results`, "View Full Report", "#d97706")}
+    ${p("Your 10 fitting credits have been added to your account — start a new fitting anytime.")}
+  `);
+}
+
 export function subscriptionActiveEmail(name: string, plan: string) {
   return base(`
     ${h1("Subscription confirmed!")}

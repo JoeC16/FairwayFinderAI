@@ -25,6 +25,8 @@ function NewFittingRedirect() {
         const { sessionId, guestToken } = await res.json() as { sessionId: string; guestToken: string };
 
         sessionStorage.setItem(`fitting_token_${sessionId}`, guestToken);
+        // Also persist in a cookie — survives auth redirects and tab closes
+        document.cookie = `ff_pending_claim=${sessionId}:${guestToken};path=/;max-age=604800;SameSite=Lax`;
         router.push(`/fitting/${sessionId}`);
       } catch (err) {
         console.error(err);

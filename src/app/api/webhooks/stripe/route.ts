@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { subscriptionActiveEmail } from "@/lib/email/templates";
+import { subscriptionActiveEmail, reportUnlockedEmail } from "@/lib/email/templates";
 
 export const runtime = "nodejs";
 
@@ -32,6 +32,37 @@ export async function POST(req: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const cs = event.data.object as Stripe.Checkout.Session;
+
+      // Consumer one-time unlock
+      if (cs.mode === "payment" && cs.metadata?.type === "consumer_unlock") {
+        const { userId, sessionId } = cs.metadata;
+        if (!userId || !sessionId) break;
+
+        await db.fittingSession.update({
+          where: { id: sessionId },
+          data: { resultsUnlocked: true },
+        });
+
+        await db.subscription.upsert({
+          where: { userId },
+          update: { fittingCredits: { increment: 10 } },
+          create: { userId, plan: "free", status: "active", fittingCredits: 10 },
+        });
+
+        const user = await db.user.findUnique({
+          where: { id: userId },
+          select: { email: true, name: true },
+        });
+        if (user?.email) {
+          await sendEmail({
+            to: user.email,
+            subject: "Your FairwayFit AI report is unlocked",
+            html: reportUnlockedEmail(user.name ?? "Golfer", sessionId),
+          });
+        }
+        break;
+      }
+
       if (cs.mode !== "subscription") break;
 
       const retailerId = cs.metadata?.retailerId;
