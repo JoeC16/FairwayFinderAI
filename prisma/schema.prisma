@@ -93,11 +93,12 @@ model FittingSession {
   guestToken  String?       @unique
   status      FittingStatus @default(IN_PROGRESS)
   currentStep Int           @default(1)
-  source      String?
-  metadata      Json?
-  swingAnalysis Json?
-  completedAt   DateTime?
-  createdAt   DateTime      @default(now())
+  source          String?
+  metadata        Json?
+  swingAnalysis   Json?
+  resultsUnlocked Boolean   @default(false)
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
   updatedAt   DateTime      @updatedAt
 
   user           User?              @relation(fields: [userId], references: [id])
@@ -570,6 +571,8 @@ model Subscription {
   stripePriceId     String?
   plan              String    @default("free")
   status            String    @default("active")
+  fittingCredits    Int       @default(0)
+  promoterUntil     DateTime?
   currentPeriodEnd  DateTime?
   cancelAtPeriodEnd Boolean   @default(false)
   trialEnd          DateTime?

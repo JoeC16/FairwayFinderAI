@@ -150,11 +150,29 @@ export async function POST(req: NextRequest, { params }: Params) {
       });
     }
 
-    // Mark session complete
+    // Determine if results should be unlocked
+    const isRetailerFitting = !!session.retailerId;
+    let hasCredit = false;
+    let isPromoter = false;
+    if (!isRetailerFitting && session.userId) {
+      const sub = await db.subscription.findUnique({ where: { userId: session.userId } });
+      isPromoter = sub?.promoterUntil ? sub.promoterUntil > new Date() : false;
+      hasCredit = (sub?.fittingCredits ?? 0) > 0;
+    }
+    const resultsUnlocked = isRetailerFitting || isPromoter || hasCredit;
+
+    // Mark session complete + set unlock flag
     await db.fittingSession.update({
       where: { id: sessionId },
-      data: { status: "COMPLETED", completedAt: new Date() },
+      data: { status: "COMPLETED", completedAt: new Date(), resultsUnlocked },
     });
+
+    if (hasCredit && !isPromoter && session.userId) {
+      await db.subscription.update({
+        where: { userId: session.userId },
+        data: { fittingCredits: { decrement: 1 } },
+      });
+    }
 
     // Increment retailer fitting usage + send report email
     if (session.retailerId) {
@@ -172,6 +190,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       resultId: storedResult.id,
       sessionId,
       overallConfidence: result.confidence.overall.score,
+      resultsUnlocked,
       result,
     });
   } catch (error) {
