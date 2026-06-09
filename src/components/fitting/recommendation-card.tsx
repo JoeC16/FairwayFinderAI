@@ -85,10 +85,28 @@ export function RecommendationCard({ product, rank }: Props) {
           </div>
         )}
 
-        {!hasInventoryMatch && product.msrp && (
-          <div className="flex items-center gap-2">
-            <Tag className="h-3.5 w-3.5 text-gray-400" />
-            <span className="text-sm text-gray-500">MSRP: {formatCurrency(product.msrp)}</span>
+        {!hasInventoryMatch && (
+          <div className="space-y-2">
+            {product.msrp && (
+              <div className="flex items-center gap-2">
+                <Tag className="h-3.5 w-3.5 text-gray-400" />
+                <span className="text-sm text-gray-500">MSRP: {formatCurrency(product.msrp)}</span>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-3">
+              {getAffiliateLinks(product.brand, product.model).map((link) => (
+                <a
+                  key={link.name}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Find on {link.name}
+                </a>
+              ))}
+            </div>
           </div>
         )}
       </div>

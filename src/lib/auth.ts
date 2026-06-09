@@ -67,6 +67,13 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Allow explicit callbackUrls (e.g. /retailer/dashboard after sign-up)
+      if (url.startsWith(baseUrl) && url !== baseUrl + "/") return url;
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Default: send to role-aware landing
+      return `${baseUrl}/auth/role-redirect`;
+    },
   },
   events: {
     async createUser({ user }) {
