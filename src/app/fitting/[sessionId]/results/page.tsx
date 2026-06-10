@@ -23,12 +23,15 @@ export default async function FittingResultsPage({ params, searchParams }: Props
 
   // Claim guest session transparently after sign-in redirect
   if (guestToken && authSession?.user) {
-    await db.fittingSession.updateMany({
+    const claimed = await db.fittingSession.updateMany({
       where: { id: sessionId, guestToken, userId: null },
       data: { userId: authSession.user.id },
     });
-    // Redirect to clean URL (removes token from browser history)
-    redirect(`/fitting/${sessionId}/results`);
+    // Only redirect to clean URL if we actually claimed a new session —
+    // prevents an infinite redirect loop if the cookie outlives the claim
+    if (claimed.count > 0) {
+      redirect(`/fitting/${sessionId}/results`);
+    }
   }
 
   const session = await db.fittingSession.findUnique({
