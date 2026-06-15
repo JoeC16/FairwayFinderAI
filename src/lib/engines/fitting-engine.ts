@@ -88,7 +88,7 @@ function buildUpgradePriorities(input: FittingEngineInput): UpgradePriority[] {
       currentClub: driver ? `${driver.brand ?? ""} ${driver.model ?? "Unknown"}`.trim() : "None",
       recommendedClub: "New fitted driver",
       expectedImprovement: "10-15 extra yards, improved accuracy",
-      estimatedCost: "$450-$700",
+      estimatedCost: "£450-£700",
       priority: "high",
       reasoning: "Driver fitting typically delivers the largest performance improvement per dollar spent.",
     });
@@ -102,7 +102,7 @@ function buildUpgradePriorities(input: FittingEngineInput): UpgradePriority[] {
       currentClub: wedges.length > 0 ? "Partial wedge set" : "No dedicated wedges",
       recommendedClub: "Complete 3-wedge setup",
       expectedImprovement: "Better distance gapping, improved spin control",
-      estimatedCost: "$400-$600",
+      estimatedCost: "£400-£600",
       priority: "high",
       reasoning: "Scoring zone precision improves more with proper wedge fitting than almost any other change.",
     });
@@ -116,7 +116,7 @@ function buildUpgradePriorities(input: FittingEngineInput): UpgradePriority[] {
       currentClub: irons ? `${irons.brand ?? ""} ${irons.model ?? "Unknown"}`.trim() : "Unknown",
       recommendedClub: p.handicap >= 20 ? "Game improvement irons" : "Players distance irons",
       expectedImprovement: "More consistent distances, improved launch conditions",
-      estimatedCost: "$800-$1,400",
+      estimatedCost: "£800-£1,400",
       priority: p.handicap >= 20 ? "high" : "medium",
       reasoning: "New irons matched to your swing speed and lie/length requirements will produce more consistent results.",
     });
@@ -133,7 +133,7 @@ function buildUpgradePriorities(input: FittingEngineInput): UpgradePriority[] {
         currentClub: "Gap in long game",
         recommendedClub: `${Math.round(dm.driver - 40)}y gap club`,
         expectedImprovement: `Better coverage for ${Math.round(dm.driver - 50)}-${Math.round(dm.driver - 15)}y shots`,
-        estimatedCost: "$200-$350",
+        estimatedCost: "£200-£350",
         priority: "medium",
         reasoning: "A significant long-game gap exists between your driver and longest iron.",
       });
