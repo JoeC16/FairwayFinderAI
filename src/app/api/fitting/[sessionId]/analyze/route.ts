@@ -154,12 +154,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     const isRetailerFitting = !!session.retailerId;
     let hasCredit = false;
     let isPromoter = false;
+    let isAdmin = false;
     if (!isRetailerFitting && session.userId) {
-      const sub = await db.subscription.findUnique({ where: { userId: session.userId } });
+      const [sub, user] = await Promise.all([
+        db.subscription.findUnique({ where: { userId: session.userId } }),
+        db.user.findUnique({ where: { id: session.userId }, select: { role: true } }),
+      ]);
       isPromoter = sub?.promoterUntil ? sub.promoterUntil > new Date() : false;
       hasCredit = (sub?.fittingCredits ?? 0) > 0;
+      isAdmin = user?.role === "ADMIN";
     }
-    const resultsUnlocked = isRetailerFitting || isPromoter || hasCredit;
+    const resultsUnlocked = isRetailerFitting || isPromoter || hasCredit || isAdmin;
 
     // Mark session complete + set unlock flag
     await db.fittingSession.update({

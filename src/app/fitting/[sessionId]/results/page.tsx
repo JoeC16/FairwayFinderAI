@@ -50,7 +50,8 @@ export default async function FittingResultsPage({ params, searchParams }: Props
     notFound();
   }
 
-  const isUnlocked = session.resultsUnlocked || !!session.retailerId;
+  const isAdmin = authSession?.user?.role === "ADMIN";
+  const isUnlocked = session.resultsUnlocked || !!session.retailerId || isAdmin;
   const isSignedIn = !!authSession?.user;
 
   // Only pass sensitive recommendation data when unlocked
