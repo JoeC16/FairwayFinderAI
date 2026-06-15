@@ -3,7 +3,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,7 @@ const GOALS = [
 export function StepPlayerProfile({ sessionId, onComplete }: Props) {
   const [loading, setLoading] = useState(false);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const { data: authSession } = useSession();
 
   const {
     register,
@@ -62,6 +64,32 @@ export function StepPlayerProfile({ sessionId, onComplete }: Props) {
   });
 
   const dominantHand = watch("dominantHand");
+
+  // Pre-fill name and email from signed-in session, then fetch latest profile for other fields
+  useEffect(() => {
+    if (!authSession?.user) return;
+    if (authSession.user.name) setValue("name", authSession.user.name);
+    if (authSession.user.email) setValue("email", authSession.user.email);
+
+    fetch("/api/user/latest-profile")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { name?: string; email?: string; phone?: string; age?: number; gender?: string; dominantHand?: string; handicap?: number; heightCm?: number; wristToFloorCm?: number; averageScore?: number; playingFrequency?: string; goals?: string[] } | null) => {
+        if (!data) return;
+        if (data.name) setValue("name", data.name);
+        if (data.email) setValue("email", data.email);
+        if (data.phone) setValue("phone", data.phone);
+        if (data.age) setValue("age", String(data.age));
+        if (data.gender) setValue("gender", data.gender);
+        if (data.dominantHand) setValue("dominantHand", data.dominantHand as "right" | "left");
+        if (data.handicap !== undefined) setValue("handicap", String(data.handicap));
+        if (data.heightCm) setValue("heightCm", String(data.heightCm));
+        if (data.wristToFloorCm) setValue("wristToFloorCm", String(data.wristToFloorCm));
+        if (data.averageScore) setValue("averageScore", String(data.averageScore));
+        if (data.playingFrequency) setValue("playingFrequency", data.playingFrequency);
+        if (data.goals?.length) setSelectedGoals(data.goals);
+      })
+      .catch(() => {});
+  }, [authSession, setValue]);
 
   function toggleGoal(goal: string) {
     setSelectedGoals((prev) =>
