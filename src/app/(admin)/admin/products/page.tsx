@@ -69,7 +69,7 @@ export default async function AdminProductsPage() {
                 </td>
                 <td className="px-5 py-3 text-gray-500">{product.year ?? "—"}</td>
                 <td className="px-5 py-3 text-gray-500">
-                  {product.msrp ? `$${product.msrp.toLocaleString()}` : "—"}
+                  {product.msrp ? `£${product.msrp.toLocaleString("en-GB")}` : "—"}
                 </td>
                 <td className="px-5 py-3 text-gray-500">{product._count.inventoryItems}</td>
                 <td className="px-5 py-3 text-gray-500">{product._count.productRecommendations}</td>

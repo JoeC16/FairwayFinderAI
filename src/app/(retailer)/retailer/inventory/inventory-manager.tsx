@@ -145,7 +145,7 @@ export function InventoryManager({ retailerId, initialItems }: Props) {
                   <td className="px-5 py-3 text-gray-500 text-xs">
                     {[item.loft && `${item.loft}°`, item.flex].filter(Boolean).join(" · ") || "—"}
                   </td>
-                  <td className="px-5 py-3 font-medium text-gray-900">${item.price}</td>
+                  <td className="px-5 py-3 font-medium text-gray-900">£{item.price.toLocaleString("en-GB")}</td>
                   <td className="px-5 py-3 text-gray-500">{item.stockQty}</td>
                   <td className="px-5 py-3">
                     <Badge variant={item.available ? "success" : "secondary"} className="text-xs">
