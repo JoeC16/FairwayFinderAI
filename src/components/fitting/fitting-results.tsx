@@ -10,6 +10,7 @@ import { RecommendationCard } from "./recommendation-card";
 import { GapChart } from "./gap-chart";
 import { PartnerRetailers } from "./partner-retailers";
 import { UnlockPaywall } from "./unlock-paywall";
+import { FittingNav } from "./fitting-nav";
 import {
   Download,
   Share2,
@@ -121,13 +122,16 @@ export function FittingResults({ sessionId, playerName, result, isUnlocked, isSi
       <div className="min-h-screen bg-gray-50">
         <div className="gradient-hero px-4 py-10 sm:px-6">
           <div className="mx-auto max-w-5xl">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Link>
+            <div className="flex items-center gap-3 mb-6">
+              <FittingNav />
+              <Link
+                href={isSignedIn ? "/dashboard" : "/"}
+                className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {isSignedIn ? "Back to Dashboard" : "Back to Home"}
+              </Link>
+            </div>
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <Trophy className="h-6 w-6 text-gold-400" />
@@ -186,13 +190,16 @@ export function FittingResults({ sessionId, playerName, result, isUnlocked, isSi
       {/* Header */}
       <div className="gradient-hero px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-5xl">
-          <Link
-            href={isSignedIn ? "/dashboard" : "/"}
-            className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {isSignedIn ? "Back to Dashboard" : "Back to Home"}
-          </Link>
+          <div className="flex items-center gap-3 mb-6">
+            <FittingNav />
+            <Link
+              href={isSignedIn ? "/dashboard" : "/"}
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {isSignedIn ? "Back to Dashboard" : "Back to Home"}
+            </Link>
+          </div>
 
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
             <div>

@@ -12,6 +12,7 @@ import { StepSwingVideo } from "./step-swing-video";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/lib/hooks/use-toast";
+import { FittingNav } from "./fitting-nav";
 import {
   User,
   Briefcase,
@@ -104,14 +105,17 @@ export function FittingWizard({ sessionId }: Props) {
       <div className="bg-brand-900 px-4 py-4 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gold-500">
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
-                  <path d="M12 2L3 7v10l9 5 9-5V7L12 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                  <path d="M12 2v20M3 7l9 5 9-5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                </svg>
+            <div className="flex items-center gap-3">
+              <FittingNav />
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gold-500">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
+                    <path d="M12 2L3 7v10l9 5 9-5V7L12 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M12 2v20M3 7l9 5 9-5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <span className="text-white font-bold">FairwayFit AI</span>
               </div>
-              <span className="text-white font-bold">FairwayFit AI</span>
             </div>
             <span className="text-white/60 text-sm">
               Step {currentStep} of {STEPS.length}
