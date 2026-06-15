@@ -52,6 +52,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role ?? "CONSUMER";
+        token.name = user.name ?? token.name;
+        token.email = user.email ?? token.email;
       }
 
       if (trigger === "update" && session) {
@@ -64,6 +66,8 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.name = (token.name as string | null) ?? session.user.name;
+        session.user.email = (token.email as string) ?? session.user.email;
       }
       return session;
     },

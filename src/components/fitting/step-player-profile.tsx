@@ -68,8 +68,8 @@ export function StepPlayerProfile({ sessionId, onComplete }: Props) {
   // Pre-fill name and email from signed-in session, then fetch latest profile for other fields
   useEffect(() => {
     if (!authSession?.user) return;
-    if (authSession.user.name) setValue("name", authSession.user.name);
-    if (authSession.user.email) setValue("email", authSession.user.email);
+    if (authSession.user.name) setValue("name", authSession.user.name, { shouldValidate: true });
+    if (authSession.user.email) setValue("email", authSession.user.email, { shouldValidate: true });
 
     fetch("/api/user/latest-profile")
       .then((r) => r.ok ? r.json() : null)
