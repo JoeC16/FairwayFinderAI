@@ -27,8 +27,6 @@ export default async function FittingResultsPage({ params, searchParams }: Props
       where: { id: sessionId, guestToken, userId: null },
       data: { userId: authSession.user.id },
     });
-    // Only redirect to clean URL if we actually claimed a new session —
-    // prevents an infinite redirect loop if the cookie outlives the claim
     if (claimed.count > 0) {
       redirect(`/fitting/${sessionId}/results`);
     }
