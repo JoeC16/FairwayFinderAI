@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { runFittingEngine } from "@/lib/engines/fitting-engine";
 import { matchInventory } from "@/lib/engines/inventory-matching-engine";
@@ -155,14 +157,22 @@ export async function POST(req: NextRequest, { params }: Params) {
     let hasCredit = false;
     let isPromoter = false;
     let isAdmin = false;
+
+    // Check the caller's role first — covers guest fittings where session.userId is null
+    const authSession = await getServerSession(authOptions);
+    if (authSession?.user?.role === "ADMIN") {
+      isAdmin = true;
+    }
+
     if (!isRetailerFitting && session.userId) {
-      const [sub, user] = await Promise.all([
-        db.subscription.findUnique({ where: { userId: session.userId } }),
-        db.user.findUnique({ where: { id: session.userId }, select: { role: true } }),
-      ]);
+      const sub = await db.subscription.findUnique({ where: { userId: session.userId } });
       isPromoter = sub?.promoterUntil ? sub.promoterUntil > new Date() : false;
       hasCredit = (sub?.fittingCredits ?? 0) > 0;
-      isAdmin = user?.role === "ADMIN";
+      // Also check DB role in case the session owner is an admin with no JWT (e.g. server-to-server)
+      if (!isAdmin) {
+        const user = await db.user.findUnique({ where: { id: session.userId }, select: { role: true } });
+        isAdmin = user?.role === "ADMIN";
+      }
     }
     const resultsUnlocked = isRetailerFitting || isPromoter || hasCredit || isAdmin;
 
@@ -172,7 +182,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: { status: "COMPLETED", completedAt: new Date(), resultsUnlocked },
     });
 
-    if (hasCredit && !isPromoter && session.userId) {
+    if (hasCredit && !isPromoter && !isAdmin && session.userId) {
       await db.subscription.update({
         where: { userId: session.userId },
         data: { fittingCredits: { decrement: 1 } },

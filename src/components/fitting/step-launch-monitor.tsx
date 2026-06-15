@@ -122,6 +122,11 @@ export function StepLaunchMonitor({ sessionId, onComplete, onSkip }: Props) {
       // Reset input so the same file can be re-uploaded
       if (fileInputRef.current) fileInputRef.current.value = "";
     };
+    reader.onerror = () => {
+      toast({ title: "File read error", description: "Could not read the file. Please try again.", variant: "destructive" });
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    };
     reader.readAsText(file);
   }
 
