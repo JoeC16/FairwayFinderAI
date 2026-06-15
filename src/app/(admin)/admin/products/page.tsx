@@ -37,9 +37,14 @@ export default async function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Product Database</h1>
           <p className="text-gray-500 text-sm mt-1">{totalCount} products</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/products/new">Add Product</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/products/seed">Seed Products</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/products/new">Add Product</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
