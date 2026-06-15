@@ -88,5 +88,103 @@ export async function POST() {
     }
   }
 
-  return NextResponse.json({ message: `Seeded ${created} new products successfully.` });
+  // Confirmed external partner retailers (search URLs verified)
+  const PARTNERS = [
+    {
+      name: "American Golf",
+      slug: "american-golf",
+      description: "UK's largest golf retailer with 100+ stores",
+      tagline: "Expert fitting & top brands",
+      website: "https://www.americangolf.co.uk",
+      searchUrlTemplate: "https://www.americangolf.co.uk/search-results?q={query}",
+      accentColor: "#e31837",
+      bgColor: "#fff1f2",
+      initials: "AG",
+      countries: ["GB"],
+      active: true,
+      sortOrder: 1,
+    },
+    {
+      name: "GolfBidder",
+      slug: "golfbidder",
+      description: "Europe's largest new & used golf club retailer",
+      tagline: "New & pre-owned at great prices",
+      website: "https://www.golfbidder.co.uk",
+      searchUrlTemplate: "https://www.golfbidder.co.uk/search?q={query}",
+      accentColor: "#006837",
+      bgColor: "#f0fdf4",
+      initials: "GB",
+      countries: ["GB"],
+      active: true,
+      sortOrder: 2,
+    },
+    {
+      name: "Affordable Golf",
+      slug: "affordable-golf",
+      description: "Top brands at competitive prices",
+      tagline: "Free UK delivery on all orders",
+      website: "https://www.affordablegolf.co.uk",
+      searchUrlTemplate: "https://www.affordablegolf.co.uk/search?q={query}&type=product",
+      accentColor: "#1d4ed8",
+      bgColor: "#eff6ff",
+      initials: "AfG",
+      countries: ["GB"],
+      active: true,
+      sortOrder: 3,
+    },
+    {
+      name: "Clarkes Golf",
+      slug: "clarkes-golf",
+      description: "Family-run golf retailer since 1983",
+      tagline: "Expert staff & top brands",
+      website: "https://www.clarkesgolf.co.uk",
+      searchUrlTemplate: "https://www.clarkesgolf.co.uk/search?q={query}&type=product",
+      accentColor: "#1a3c5e",
+      bgColor: "#f0f4f8",
+      initials: "CG",
+      countries: ["GB"],
+      active: true,
+      sortOrder: 4,
+    },
+    {
+      name: "Replay Golf",
+      slug: "replay-golf",
+      description: "New and second-hand golf clubs at great prices",
+      tagline: "New & used clubs",
+      website: "https://replay-golf.co.uk",
+      searchUrlTemplate: "https://replay-golf.co.uk/search?q={query}&type=product",
+      accentColor: "#7c3aed",
+      bgColor: "#f5f3ff",
+      initials: "RG",
+      countries: ["GB"],
+      active: true,
+      sortOrder: 5,
+    },
+    {
+      name: "eBay UK",
+      slug: "ebay-uk-golf",
+      description: "Marketplace for new & used golf clubs",
+      tagline: "Huge selection, competitive prices",
+      website: "https://www.ebay.co.uk",
+      searchUrlTemplate: "https://www.ebay.co.uk/sch/i.html?_nkw={query}&_sacat=1513",
+      accentColor: "#e53238",
+      bgColor: "#fff7ed",
+      initials: "eB",
+      countries: ["GB"],
+      active: true,
+      sortOrder: 6,
+    },
+  ];
+
+  let partnersSeeded = 0;
+  for (const partner of PARTNERS) {
+    await db.externalPartner.upsert({
+      where: { slug: partner.slug },
+      update: partner,
+      create: partner,
+    });
+    partnersSeeded++;
+  }
+
+  return NextResponse.json({ message: `Seeded ${created} new products and ${partnersSeeded} partner retailers successfully.` });
 }
