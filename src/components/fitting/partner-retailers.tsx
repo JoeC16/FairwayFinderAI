@@ -38,7 +38,8 @@ export function PartnerRetailers({ sessionId, recommendedClubs }: Props) {
 
   useEffect(load, [sessionId]);
 
-  const searchQuery = data?.searchTerms?.join(" ") || recommendedClubs?.join(" ") || "";
+  const searchTerms: string[] = data?.searchTerms?.length ? data.searchTerms : (recommendedClubs ?? []);
+  const searchQuery = searchTerms.join(" ");
   const matches = data?.matches ?? [];
   const partnerResults = data?.partnerResults ?? [];
   const scrapedPartners = partnerResults.filter((p) => p.scraped);
@@ -128,7 +129,7 @@ export function PartnerRetailers({ sessionId, recommendedClubs }: Props) {
                 </p>
               )}
               {linkOnlyPartners.map((pr) => (
-                <LinkPartnerCard key={pr.partner.id} result={pr} searchQuery={searchQuery} />
+                <LinkPartnerCard key={pr.partner.id} result={pr} searchTerms={searchTerms} />
               ))}
             </div>
           )}
@@ -281,19 +282,19 @@ function ScrapedPartnerCard({ result, searchQuery }: { result: PartnerResult; se
   );
 }
 
-function LinkPartnerCard({ result, searchQuery }: { result: PartnerResult; searchQuery: string }) {
+function LinkPartnerCard({ result, searchTerms }: { result: PartnerResult; searchTerms: string[] }) {
   const { partner } = result;
-  const shopUrl = partner.searchUrlTemplate && searchQuery
-    ? partner.searchUrlTemplate.replace("{query}", encodeURIComponent(searchQuery))
-    : partner.website;
+
+  const links =
+    searchTerms.length > 0 && partner.searchUrlTemplate
+      ? searchTerms.map((term) => ({
+          label: term,
+          url: partner.searchUrlTemplate!.replace("{query}", encodeURIComponent(term)),
+        }))
+      : [{ label: `Visit ${partner.name}`, url: partner.website }];
 
   return (
-    <a
-      href={shopUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all group"
-    >
+    <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all">
       <div
         className="h-11 w-11 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
         style={{ background: partner.bgColor, color: partner.accentColor }}
@@ -302,16 +303,24 @@ function LinkPartnerCard({ result, searchQuery }: { result: PartnerResult; searc
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-900 text-sm">{partner.name}</p>
-        <p className="text-xs text-gray-500">{partner.description}{partner.tagline ? ` · ${partner.tagline}` : ""}</p>
+        <p className="text-xs text-gray-500 truncate">{partner.description}{partner.tagline ? ` · ${partner.tagline}` : ""}</p>
       </div>
-      <div
-        className={cn("shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white opacity-90 group-hover:opacity-100")}
-        style={{ background: partner.accentColor }}
-      >
-        <Tag className="h-3 w-3" />
-        {searchQuery ? "Search Stock" : "Visit"}
-        <ExternalLink className="h-3 w-3" />
+      <div className="shrink-0 flex flex-col gap-1.5 items-end">
+        {links.map(({ label, url }) => (
+          <a
+            key={label}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white")}
+            style={{ background: partner.accentColor }}
+          >
+            <Tag className="h-3 w-3 shrink-0" />
+            <span className="truncate max-w-[140px]">{label}</span>
+            <ExternalLink className="h-3 w-3 shrink-0" />
+          </a>
+        ))}
       </div>
-    </a>
+    </div>
   );
 }

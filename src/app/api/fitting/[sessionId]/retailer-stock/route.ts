@@ -66,10 +66,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const searchTerms: MatchTerm[] = [];
 
   const dp = driverRec?.recommendedProducts?.[0];
-  if (dp?.brand && dp?.model) searchTerms.push({ matchType: "driver", brand: dp.brand, model: dp.model.split(" ")[0] });
+  if (dp?.brand && dp?.model) searchTerms.push({ matchType: "driver", brand: dp.brand, model: dp.model });
 
   const ip = ironRec?.recommendedProducts?.[0];
-  if (ip?.brand && ip?.model) searchTerms.push({ matchType: "irons", brand: ip.brand, model: ip.model.split(" ")[0] });
+  if (ip?.brand && ip?.model) searchTerms.push({ matchType: "irons", brand: ip.brand, model: ip.model });
 
   // ── Platform retailer inventory cross-ref ───────────────────────────────
   const matches: StockMatch[] = [];
