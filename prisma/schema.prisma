@@ -61,6 +61,7 @@ model User {
   password      String?
   role          UserRole  @default(CONSUMER)
   active        Boolean   @default(true)
+  referralCode  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -74,6 +75,7 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([referralCode])
 }
 
 enum UserRole {
@@ -598,6 +600,39 @@ model RetailerSubscription {
   updatedAt         DateTime     @updatedAt
 
   retailer Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// REFERRALS
+// ============================================================
+
+model ReferralPartner {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  name           String
+  email          String?
+  commissionRate Float    @default(0.20)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  conversions ReferralConversion[]
+
+  @@index([code])
+}
+
+model ReferralConversion {
+  id                String          @id @default(cuid())
+  referralPartnerId String
+  referralPartner   ReferralPartner @relation(fields: [referralPartnerId], references: [id], onDelete: Cascade)
+  userId            String?
+  userEmail         String?
+  type              String // "signup" | "payment"
+  amountPence       Int?
+  commissionPence   Int?
+  stripeSessionId   String?         @unique
+  createdAt         DateTime        @default(now())
+
+  @@index([referralPartnerId])
 }
 
 // ============================================================

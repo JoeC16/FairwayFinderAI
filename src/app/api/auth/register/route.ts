@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/email/templates";
+import { referralCookieName, recordReferralSignup } from "@/lib/referrals";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(100),
@@ -32,6 +34,8 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const cookieStore = await cookies();
+    const refCode = cookieStore.get(referralCookieName())?.value;
 
     const user = await db.user.create({
       data: {
@@ -39,6 +43,7 @@ export async function POST(req: Request) {
         email,
         password: passwordHash,
         role: role === "retailer" ? "RETAILER" : "CONSUMER",
+        referralCode: refCode || undefined,
         subscription: {
           create: {
             plan: "free",
@@ -47,6 +52,10 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    if (refCode) {
+      await recordReferralSignup(refCode, user.id, user.email);
+    }
 
     await sendEmail({
       to: email,

@@ -3,7 +3,9 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { referralCookieName, recordReferralSignup } from "@/lib/referrals";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -89,6 +91,13 @@ export const authOptions: NextAuthOptions = {
           status: "active",
         },
       });
+
+      const cookieStore = await cookies();
+      const refCode = cookieStore.get(referralCookieName())?.value;
+      if (refCode && user.email) {
+        await db.user.update({ where: { id: user.id! }, data: { referralCode: refCode } });
+        await recordReferralSignup(refCode, user.id!, user.email);
+      }
     },
   },
 };

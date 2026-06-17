@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const referrer = await db.user.findUnique({ where: { id: session.user.id }, select: { referralCode: true } });
+    const refMeta: Record<string, string> = referrer?.referralCode ? { referralCode: referrer.referralCode } : {};
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://fairwayfit.ai";
     const checkout = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -70,9 +73,9 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/fitting/${sessionId}/results?unlocked=1`,
       cancel_url: `${appUrl}/fitting/${sessionId}/results`,
-      metadata: { type: "consumer_unlock", userId: session.user.id, sessionId },
+      metadata: { type: "consumer_unlock", userId: session.user.id, sessionId, ...refMeta },
       payment_intent_data: {
-        metadata: { type: "consumer_unlock", userId: session.user.id, sessionId },
+        metadata: { type: "consumer_unlock", userId: session.user.id, sessionId, ...refMeta },
       },
     });
     return NextResponse.json({ url: checkout.url });
@@ -110,6 +113,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const referrer = await db.user.findUnique({ where: { id: session.user.id }, select: { referralCode: true } });
+  const refMeta: Record<string, string> = referrer?.referralCode ? { referralCode: referrer.referralCode } : {};
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://fairwayfit.ai";
   const planKey = (plan ?? "STARTER").toUpperCase();
   const checkout = await stripe.checkout.sessions.create({
@@ -118,7 +124,7 @@ export async function POST(req: NextRequest) {
     line_items: [{ price: retailerPriceId, quantity: 1 }],
     success_url: `${appUrl}/retailer/settings?upgraded=1`,
     cancel_url: `${appUrl}/retailer/settings`,
-    metadata: { retailerId: retailer.id, plan: planKey },
+    metadata: { retailerId: retailer.id, plan: planKey, ...refMeta },
     subscription_data: {
       metadata: { retailerId: retailer.id, plan: planKey, fittingsLimit: String(PLAN_LIMITS[planKey] ?? 50) },
     },

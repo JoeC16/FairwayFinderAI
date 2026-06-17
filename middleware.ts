@@ -1,4 +1,5 @@
 import { withAuth } from "next-auth/middleware";
+import type { NextRequestWithAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 export default withAuth(
@@ -20,7 +21,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    return NextResponse.next();
+    return attachReferralCookie(req, NextResponse.next());
   },
   {
     callbacks: {
@@ -53,6 +54,20 @@ export default withAuth(
     },
   }
 );
+
+// Captures ?ref=CODE into a 30-day cookie so signup attribution survives
+// browsing before the user creates an account.
+function attachReferralCookie(req: NextRequestWithAuth, res: NextResponse) {
+  const ref = req.nextUrl.searchParams.get("ref");
+  if (ref && /^[a-zA-Z0-9_-]{1,40}$/.test(ref)) {
+    res.cookies.set("ff_ref", ref, {
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    });
+  }
+  return res;
+}
 
 export const config = {
   matcher: [

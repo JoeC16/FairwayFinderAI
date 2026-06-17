@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { subscriptionActiveEmail, reportUnlockedEmail } from "@/lib/email/templates";
+import { recordReferralPayment } from "@/lib/referrals";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,16 @@ export async function POST(req: NextRequest) {
             html: reportUnlockedEmail(user.name ?? "Golfer", sessionId),
           });
         }
+
+        if (cs.metadata?.referralCode) {
+          await recordReferralPayment({
+            code: cs.metadata.referralCode,
+            userId,
+            userEmail: user?.email ?? undefined,
+            amountPence: cs.amount_total ?? 0,
+            stripeSessionId: cs.id,
+          });
+        }
         break;
       }
 
@@ -107,6 +118,15 @@ export async function POST(req: NextRequest) {
           subject: "Subscription confirmed — FairwayFit AI",
           html: subscriptionActiveEmail(retailer.name, plan.charAt(0) + plan.slice(1).toLowerCase()),
         });
+
+        if (cs.metadata?.referralCode) {
+          await recordReferralPayment({
+            code: cs.metadata.referralCode,
+            userEmail: retailer.email,
+            amountPence: cs.amount_total ?? 0,
+            stripeSessionId: cs.id,
+          });
+        }
       }
       break;
     }
