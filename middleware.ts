@@ -59,7 +59,8 @@ export default withAuth(
 // browsing before the user creates an account.
 function attachReferralCookie(req: NextRequestWithAuth, res: NextResponse) {
   const ref = req.nextUrl.searchParams.get("ref");
-  if (ref && /^[a-zA-Z0-9_-]{1,40}$/.test(ref)) {
+  const consent = req.cookies.get("ff_consent")?.value;
+  if (ref && /^[a-zA-Z0-9_-]{1,40}$/.test(ref) && consent === "accepted") {
     res.cookies.set("ff_ref", ref, {
       maxAge: 60 * 60 * 24 * 30,
       path: "/",

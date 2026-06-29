@@ -25,6 +25,8 @@ export function SettingsSecurityClient({ email, hasPassword }: Props) {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -51,13 +53,21 @@ export function SettingsSecurityClient({ email, hasPassword }: Props) {
 
   async function handleDeleteAccount() {
     setDeleteLoading(true);
+    setDeleteError("");
     try {
-      const res = await fetch("/api/auth/delete-account", { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete account");
+      const res = await fetch("/api/auth/delete-account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? "Failed to delete account");
+      }
       await signOut({ callbackUrl: "/" });
-    } catch {
+    } catch (err) {
+      setDeleteError((err as Error).message);
       setDeleteLoading(false);
-      setShowDeleteConfirm(false);
     }
   }
 
@@ -148,6 +158,9 @@ export function SettingsSecurityClient({ email, hasPassword }: Props) {
           </Button>
         ) : (
           <div className="space-y-2">
+            {deleteError && (
+              <p className="text-xs text-red-700 bg-red-100 rounded p-2">{deleteError}</p>
+            )}
             <p className="text-xs text-red-700 font-medium">Type <strong>DELETE</strong> to confirm:</p>
             <Input
               value={deleteConfirmText}
@@ -155,16 +168,42 @@ export function SettingsSecurityClient({ email, hasPassword }: Props) {
               placeholder="DELETE"
               className="h-8 text-sm border-red-200"
             />
+            {hasPassword && (
+              <>
+                <p className="text-xs text-red-700 font-medium">Enter your password to confirm:</p>
+                <Input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Current password"
+                  className="h-8 text-sm border-red-200"
+                  autoComplete="current-password"
+                />
+              </>
+            )}
             <div className="flex gap-2">
               <Button
                 variant="destructive"
                 size="sm"
-                disabled={deleteConfirmText !== "DELETE" || deleteLoading}
+                disabled={
+                  deleteConfirmText !== "DELETE" ||
+                  (hasPassword && !deletePassword) ||
+                  deleteLoading
+                }
                 onClick={handleDeleteAccount}
               >
                 {deleteLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirm Delete"}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteConfirmText("");
+                  setDeletePassword("");
+                  setDeleteError("");
+                }}
+              >
                 Cancel
               </Button>
             </div>
