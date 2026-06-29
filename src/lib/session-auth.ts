@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import type { Session } from "next-auth";
 import { NextRequest } from "next/server";
 
@@ -19,11 +20,10 @@ export async function requireSessionAccess(
     return db.fittingSession.findUnique({ where: { id: sessionId } });
   }
 
-  const conditions: Parameters<typeof db.fittingSession.findFirst>[0]["where"][] = [];
+  const conditions: Prisma.FittingSessionWhereInput[] = [];
 
   if (authSession?.user?.id) {
     conditions.push({ userId: authSession.user.id });
-    // RETAILER role can access sessions belonging to their retailer shop
     if (authSession.user.role === "RETAILER") {
       conditions.push({ retailer: { userId: authSession.user.id } });
     }
