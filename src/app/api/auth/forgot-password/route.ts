@@ -3,8 +3,15 @@ import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { passwordResetEmail } from "@/lib/email/templates";
 import { nanoid } from "nanoid";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { allowed } = rateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ ok: true }); // silent — don't reveal rate-limiting via different response shape
+  }
+
   const { email } = await req.json() as { email: string };
 
   // Always return 200 to prevent user enumeration

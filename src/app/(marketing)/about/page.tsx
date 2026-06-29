@@ -15,7 +15,7 @@ export default function AboutPage() {
           </h1>
           <p className="text-xl text-white/70 leading-relaxed">
             We built FairwayFit AI because world-class equipment fitting shouldn't require a
-            $500 appointment and a two-hour drive to a fitting centre.
+            £500 appointment and a two-hour drive to a fitting centre.
           </p>
         </div>
       </div>

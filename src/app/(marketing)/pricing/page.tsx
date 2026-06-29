@@ -129,7 +129,7 @@ export default function PricingPage() {
 
                 <div className="mb-8">
                   <span className={cn("text-5xl font-bold", plan.highlight ? "text-white" : "text-gray-900")}>
-                    ${plan.price}
+                    £{plan.price}
                   </span>
                   <span className={cn("text-sm ml-1", plan.highlight ? "text-white/50" : "text-gray-400")}>/month</span>
                 </div>

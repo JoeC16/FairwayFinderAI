@@ -13,6 +13,14 @@ const PLAN_LIMITS: Record<string, number> = {
   ENTERPRISE: 999999,
 };
 
+function buildPricePlanMap(): Record<string, "STARTER" | "PROFESSIONAL" | "ENTERPRISE"> {
+  const m: Record<string, "STARTER" | "PROFESSIONAL" | "ENTERPRISE"> = {};
+  if (process.env.STRIPE_PRICE_RETAILER_STARTER) m[process.env.STRIPE_PRICE_RETAILER_STARTER] = "STARTER";
+  if (process.env.STRIPE_PRICE_RETAILER_PROFESSIONAL) m[process.env.STRIPE_PRICE_RETAILER_PROFESSIONAL] = "PROFESSIONAL";
+  if (process.env.STRIPE_PRICE_RETAILER_ENTERPRISE) m[process.env.STRIPE_PRICE_RETAILER_ENTERPRISE] = "ENTERPRISE";
+  return m;
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
@@ -38,6 +46,13 @@ export async function POST(req: NextRequest) {
       if (cs.mode === "payment" && cs.metadata?.type === "consumer_unlock") {
         const { userId, sessionId } = cs.metadata;
         if (!userId || !sessionId) break;
+
+        // Idempotency: skip if already unlocked (Stripe may redeliver events)
+        const existing = await db.fittingSession.findUnique({
+          where: { id: sessionId },
+          select: { resultsUnlocked: true },
+        });
+        if (existing?.resultsUnlocked) break;
 
         await db.fittingSession.update({
           where: { id: sessionId },
@@ -136,14 +151,30 @@ export async function POST(req: NextRequest) {
       const retailerId = sub.metadata?.retailerId;
       if (!retailerId) break;
 
+      const pricePlanMap = buildPricePlanMap();
+      const priceId = sub.items.data[0]?.price.id;
+      const plan = priceId ? pricePlanMap[priceId] : undefined;
+
       await db.retailerSubscription.updateMany({
         where: { stripeSubId: sub.id },
         data: {
           status: sub.status,
           currentPeriodEnd: new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000),
           cancelAtPeriodEnd: sub.cancel_at_period_end,
+          ...(plan && {
+            plan,
+            fittingsLimit: PLAN_LIMITS[plan],
+          }),
         },
       });
+
+      // Keep retailer.plan in sync when upgraded/downgraded via portal
+      if (plan) {
+        await db.retailer.update({
+          where: { id: retailerId },
+          data: { plan },
+        });
+      }
       break;
     }
 

@@ -73,19 +73,30 @@ export async function analyseSwing(dataUrls: string[]): Promise<SwingAnalysis> {
     };
   });
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    messages: [
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
+  let response: Awaited<ReturnType<typeof client.messages.create>>;
+  try {
+    response = await client.messages.create(
       {
-        role: "user",
-        content: [
-          ...imageContent,
-          { type: "text", text: PROMPT },
+        model: "claude-opus-4-8",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: [
+              ...imageContent,
+              { type: "text", text: PROMPT },
+            ],
+          },
         ],
       },
-    ],
-  });
+      { signal: controller.signal },
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const text = response.content[0].type === "text" ? response.content[0].text.trim() : "";
   const jsonStr = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");

@@ -28,7 +28,7 @@ export async function sendEmail({
 }) {
   const t = getTransport();
   if (!t) {
-    console.log(`[email] SMTP not configured — skipping email to ${to}: ${subject}`);
+    console.error(`[email] SMTP not configured — skipping email to ${to}: ${subject}`);
     return;
   }
   await t.sendMail({

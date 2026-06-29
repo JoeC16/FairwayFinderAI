@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { requireSessionAccess, getGuestToken } from "@/lib/session-auth";
 
 interface Params {
   params: Promise<{ sessionId: string }>;
@@ -10,18 +11,11 @@ interface Params {
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { sessionId } = await params;
-    const session = await getServerSession(authOptions);
-    const guestToken = req.nextUrl.searchParams.get("token");
+    const authSession = await getServerSession(authOptions);
+    const guestToken = getGuestToken(req);
 
-    const fittingSession = await db.fittingSession.findFirst({
-      where: {
-        id: sessionId,
-        OR: [
-          { userId: session?.user?.id ?? undefined },
-          { guestToken: guestToken ?? undefined },
-          // Allow anonymous access for in-progress sessions with valid ID
-        ],
-      },
+    const fittingSession = await db.fittingSession.findUnique({
+      where: { id: sessionId },
       include: {
         playerProfile: true,
         currentBag: true,
@@ -46,6 +40,29 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
+    // Verify caller owns this session (or is admin/retailer)
+    const isAdmin = authSession?.user?.role === "ADMIN";
+    const isOwner = authSession?.user?.id && fittingSession.userId === authSession.user.id;
+    const isRetailerOwner =
+      authSession?.user?.role === "RETAILER" && fittingSession.retailerId !== null;
+    const isGuest = guestToken && fittingSession.guestToken === guestToken;
+
+    if (!isAdmin && !isOwner && !isRetailerOwner && !isGuest) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Strip full recommendations when results are locked (consumers who haven't paid)
+    const unlocked = fittingSession.resultsUnlocked || isRetailerOwner || isAdmin;
+    if (!unlocked && fittingSession.fittingResult) {
+      return NextResponse.json({
+        ...fittingSession,
+        fittingResult: {
+          ...fittingSession.fittingResult,
+          productRecommendations: [],
+        },
+      });
+    }
+
     return NextResponse.json(fittingSession);
   } catch (error) {
     console.error("Get session error:", error);
@@ -56,14 +73,22 @@ export async function GET(req: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const { sessionId } = await params;
-    const body = await req.json();
+    const authSession = await getServerSession(authOptions);
+    const guestToken = getGuestToken(req);
+
+    const owned = await requireSessionAccess(sessionId, authSession, guestToken);
+    if (!owned) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json() as { currentStep?: number; status?: string; metadata?: unknown };
 
     const updated = await db.fittingSession.update({
       where: { id: sessionId },
       data: {
         currentStep: body.currentStep,
-        status: body.status,
-        metadata: body.metadata,
+        status: body.status as Parameters<typeof db.fittingSession.update>[0]["data"]["status"],
+        metadata: body.metadata as Parameters<typeof db.fittingSession.update>[0]["data"]["metadata"],
       },
     });
 

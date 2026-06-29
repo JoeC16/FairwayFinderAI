@@ -38,9 +38,16 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
+    // Idempotency: prevent double-processing
+    if (session.status === "PROCESSING") {
+      return NextResponse.json({ error: "Analysis already in progress" }, { status: 409 });
+    }
+
     if (!session.playerProfile) {
       return NextResponse.json({ error: "Player profile required to run analysis" }, { status: 400 });
     }
+
+    const alreadyCompleted = session.status === "COMPLETED";
 
     // Update status to processing
     await db.fittingSession.update({
@@ -182,7 +189,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: { status: "COMPLETED", completedAt: new Date(), resultsUnlocked },
     });
 
-    if (hasCredit && !isPromoter && !isAdmin && session.userId) {
+    // Only decrement credits on first analysis to prevent double-charge on retry
+    if (hasCredit && !isPromoter && !isAdmin && session.userId && !alreadyCompleted) {
       await db.subscription.update({
         where: { userId: session.userId },
         data: { fittingCredits: { decrement: 1 } },

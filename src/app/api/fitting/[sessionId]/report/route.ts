@@ -29,6 +29,12 @@ async function generateReport(req: Request, params: { sessionId: string }) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Consumers (owner or guest) must have paid to unlock
+  const isAdmin = session?.user?.role === "ADMIN";
+  if (!isRetailer && !isAdmin && !fittingSession.resultsUnlocked) {
+    return NextResponse.json({ error: "Report not unlocked" }, { status: 403 });
+  }
+
   if (!fittingSession.playerProfile || !fittingSession.fittingResult) {
     return NextResponse.json({ error: "Fitting not complete" }, { status: 400 });
   }

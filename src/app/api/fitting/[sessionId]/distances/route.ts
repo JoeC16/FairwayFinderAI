@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { requireSessionAccess, getGuestToken } from "@/lib/session-auth";
 
 interface Params {
   params: Promise<{ sessionId: string }>;
@@ -29,6 +32,14 @@ const distanceSchema = z.object({
 export async function POST(req: NextRequest, { params }: Params) {
   try {
     const { sessionId } = await params;
+    const authSession = await getServerSession(authOptions);
+    const guestToken = getGuestToken(req);
+
+    const owned = await requireSessionAccess(sessionId, authSession, guestToken);
+    if (!owned) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const distances = distanceSchema.parse(body);
 

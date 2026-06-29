@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/email/templates";
 import { referralCookieName, recordReferralSignup } from "@/lib/referrals";
+import { rateLimit } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(100),
@@ -14,7 +15,13 @@ const registerSchema = z.object({
   role: z.enum(["consumer", "retailer"]).default("consumer"),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { allowed } = rateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests — try again in 15 minutes" }, { status: 429 });
+  }
+
   try {
     const body = await req.json() as unknown;
     const parsed = registerSchema.safeParse(body);
